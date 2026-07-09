@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f1f5f9;
+  --panel: #ffffff;
+  --muted: #6b7280;
+  --primary: #106ad7;
+  --accent-blue: #2b6fb6;
+  --success: #2ecc71;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --soft-border: #e6e9ee;
+}
+
+body { background: var(--bg); font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+
+.text-muted { color: var(--muted); }
+.bg-panel { background: var(--panel); }
