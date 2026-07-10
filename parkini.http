@@ -1,0 +1,6 @@
+@parkini_HostAddress = http://localhost:5226
+
+GET {{parkini_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
