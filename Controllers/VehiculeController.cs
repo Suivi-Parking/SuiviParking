@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SuiviParking.API.Data;
+using SuiviParking.API.DTOs;
 using SuiviParking.API.Models;
 
 namespace SuiviParking.API.Controllers
@@ -18,82 +19,140 @@ namespace SuiviParking.API.Controllers
 
         // GET api/vehicule
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Vehicule>>> GetAll()
+        public async Task<ActionResult<VehiculeListeResponseDto>> GetAll(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] int? employeId = null)
         {
-            return await _context.Vehicules
+            var query = _context.Vehicules
                 .Include(v => v.Employe)
+                .AsQueryable();
+
+            if (employeId.HasValue)
+                query = query.Where(v => v.EmployeId == employeId.Value);
+
+            var total = await query.CountAsync();
+
+            var vehicules = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(v => new VehiculeDto
+                {
+                    Id = v.Id,
+                    Immatriculation = v.Immatriculation,
+                    Marque = v.Marque,
+                    Modele = v.Modele,
+                    Couleur = v.Couleur,
+                    Type = v.Type,
+                    Statut = v.Statut,
+                    EmployeId = v.EmployeId,
+                    EmployeNom = v.Employe != null ?
+                        v.Employe.Nom + " " + v.Employe.Prenom : ""
+                })
                 .ToListAsync();
+
+            return Ok(new VehiculeListeResponseDto
+            {
+                Items = vehicules,
+                TotalCount = total,
+                Page = page,
+                PageSize = pageSize
+            });
         }
 
         // GET api/vehicule/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Vehicule>> GetById(int id)
+        public async Task<ActionResult<VehiculeDto>> GetById(int id)
         {
-            var vehicule = await _context.Vehicules
+            var v = await _context.Vehicules
                 .Include(v => v.Employe)
                 .FirstOrDefaultAsync(v => v.Id == id);
 
-            if (vehicule == null)
-                return NotFound();
+            if (v == null)
+                return NotFound(new { message = $"Véhicule avec l'ID {id} introuvable !" });
 
-            return vehicule;
-        }
-
-        // GET api/vehicule/employe/3
-        [HttpGet("employe/{employeId}")]
-        public async Task<ActionResult<IEnumerable<Vehicule>>> GetByEmploye(int employeId)
-        {
-            return await _context.Vehicules
-                .Where(v => v.EmployeId == employeId)
-                .ToListAsync();
+            return Ok(new VehiculeDto
+            {
+                Id = v.Id,
+                Immatriculation = v.Immatriculation,
+                Marque = v.Marque,
+                Modele = v.Modele,
+                Couleur = v.Couleur,
+                Type = v.Type,
+                Statut = v.Statut,
+                EmployeId = v.EmployeId,
+                EmployeNom = v.Employe != null ?
+                    v.Employe.Nom + " " + v.Employe.Prenom : ""
+            });
         }
 
         // POST api/vehicule
         [HttpPost]
-        public async Task<ActionResult<Vehicule>> Create(Vehicule vehicule)
+        public async Task<ActionResult<VehiculeDto>> Create(CreateVehiculeDto dto)
         {
-            // Vérifier immatriculation unique
             if (await _context.Vehicules
-                .AnyAsync(v => v.Immatriculation == vehicule.Immatriculation))
-                return BadRequest(new { message = "Cette immatriculation existe déjà !" });
+                .AnyAsync(v => v.Immatriculation == dto.Immatriculation))
+                return Conflict(new { message = "Cette immatriculation est déjà utilisée !" });
 
-            // Vérifier que l'employé existe
-            if (!await _context.Employes.AnyAsync(e => e.Id == vehicule.EmployeId))
-                return BadRequest(new { message = "Employé introuvable !" });
+            if (!await _context.Employes.AnyAsync(e => e.Id == dto.EmployeId))
+                return NotFound(new { message = $"Employé avec l'ID {dto.EmployeId} introuvable !" });
+
+            var vehicule = new Vehicule
+            {
+                Immatriculation = dto.Immatriculation,
+                Marque = dto.Marque,
+                Modele = dto.Modele,
+                Couleur = dto.Couleur,
+                Type = dto.Type,
+                Statut = "ACTIF",
+                EmployeId = dto.EmployeId
+            };
 
             _context.Vehicules.Add(vehicule);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetById),
-                new { id = vehicule.Id }, vehicule);
+                new { id = vehicule.Id },
+                new VehiculeDto
+                {
+                    Id = vehicule.Id,
+                    Immatriculation = vehicule.Immatriculation,
+                    Marque = vehicule.Marque,
+                    Modele = vehicule.Modele,
+                    Couleur = vehicule.Couleur,
+                    Type = vehicule.Type,
+                    Statut = vehicule.Statut,
+                    EmployeId = vehicule.EmployeId
+                });
         }
 
         // PUT api/vehicule/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, Vehicule vehicule)
+        public async Task<IActionResult> Update(int id, UpdateVehiculeDto dto)
         {
-            if (id != vehicule.Id)
-                return BadRequest();
+            if (id != dto.Id)
+                return BadRequest(new { message = "L'ID de l'URL ne correspond pas à l'ID du corps !" });
 
-            // Vérifier immatriculation unique
+            var vehicule = await _context.Vehicules.FindAsync(id);
+            if (vehicule == null)
+                return NotFound(new { message = $"Véhicule avec l'ID {id} introuvable !" });
+
             if (await _context.Vehicules
-                .AnyAsync(v => v.Immatriculation == vehicule.Immatriculation
-                && v.Id != id))
-                return BadRequest(new { message = "Cette immatriculation existe déjà !" });
+                .AnyAsync(v => v.Immatriculation == dto.Immatriculation && v.Id != id))
+                return Conflict(new { message = "Cette immatriculation est déjà utilisée par un autre véhicule !" });
 
-            _context.Entry(vehicule).State = EntityState.Modified;
+            if (!await _context.Employes.AnyAsync(e => e.Id == dto.EmployeId))
+                return NotFound(new { message = $"Employé avec l'ID {dto.EmployeId} introuvable !" });
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!await _context.Vehicules.AnyAsync(v => v.Id == id))
-                    return NotFound();
-                throw;
-            }
+            vehicule.Immatriculation = dto.Immatriculation;
+            vehicule.Marque = dto.Marque;
+            vehicule.Modele = dto.Modele;
+            vehicule.Couleur = dto.Couleur;
+            vehicule.Type = dto.Type;
+            vehicule.Statut = dto.Statut;
+            vehicule.EmployeId = dto.EmployeId;
 
+            await _context.SaveChangesAsync();
             return NoContent();
         }
 
@@ -103,11 +162,10 @@ namespace SuiviParking.API.Controllers
         {
             var vehicule = await _context.Vehicules.FindAsync(id);
             if (vehicule == null)
-                return NotFound();
+                return NotFound(new { message = $"Véhicule avec l'ID {id} introuvable !" });
 
             _context.Vehicules.Remove(vehicule);
             await _context.SaveChangesAsync();
-
             return NoContent();
         }
     }
