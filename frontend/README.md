@@ -1,4 +1,4 @@
-Parkini frontend (Vue 3 + Vite + Tailwind)
+parkLine frontend (Vue 3 + Vite + Tailwind)
 
 Instructions:
 1. Ouvrez un terminal dans Documents/parkini/frontend
