@@ -1,7 +1,7 @@
 <template>
     <aside class="w-64 bg-panel h-screen border-r flex flex-col">
         <div class="p-5 font-bold text-primary text-lg flex items-center gap-2">
-            <span class="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-sm">PL</span>
+            <img :src="logo" alt="ParkLine" class="w-8 h-8 rounded-lg object-contain" />
             ParkLine
         </div>
 
@@ -41,6 +41,10 @@
 </template>
 
 <script setup>
+    // Import de l'image : Vite se charge de resoudre le chemin et de l'inclure au build.
+    // Le fichier doit se trouver dans src/assets/logo.png
+    import logo from '../assets/logo.png'
+
     defineProps({
         active: { type: String, default: 'entreprises' }
     })
@@ -52,7 +56,8 @@
         building: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="1"/><line x1="9" y1="7" x2="9" y2="7.01"/><line x1="15" y1="7" x2="15" y2="7.01"/><line x1="9" y1="12" x2="9" y2="12.01"/><line x1="15" y1="12" x2="15" y2="12.01"/><line x1="9" y1="17" x2="15" y2="17"/></svg>',
         users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><path d="M16 5.5c1.7.4 3 2 3 3.9 0 1.9-1.3 3.5-3 3.9"/><path d="M22 20c0-2.8-1.8-5-4-5.7"/></svg>',
         card: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>',
-        invoice: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>'
+        invoice: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>',
+        parking: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 16V8h4a3 3 0 0 1 0 6H9"/></svg>'
     }
 
     const sections = [
@@ -68,7 +73,7 @@
             title: 'Gestion',
             items: [
                 { key: 'Employé', label: 'Employé', icon: icons.users },
-                { key: 'Parking', label: 'Parking', icon: icons.users },
+                { key: 'Parking', label: 'Parking', icon: icons.parking },
                 { key: 'facturation', label: 'Facturation', icon: icons.invoice }
             ]
         }
