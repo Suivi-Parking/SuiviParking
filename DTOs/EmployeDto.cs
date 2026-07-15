@@ -1,6 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace SuiviParking.API.DTOs;
+
+namespace Parkini.Application.DTOs;
+
 
 // DTO pour afficher un employé
 public class EmployeDto

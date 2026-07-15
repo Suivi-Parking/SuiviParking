@@ -1,4 +1,5 @@
-﻿namespace SuiviParking.API.Models
+﻿namespace SuiviParking.API.Entities
+
 {
     public class Employe
     {
