@@ -1,8 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Parkini.Entities; 
+using Parkini.Entities;
 
 namespace Parkini.Infrastructure.Data;
-
 
 public class ApplicationDbContext : DbContext
 {
@@ -13,20 +12,26 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Entreprise> Entreprises => Set<Entreprise>();
     public DbSet<Abonnement> Abonnements => Set<Abonnement>();
+    public DbSet<Utilisateur> Utilisateurs => Set<Utilisateur>();
+    public DbSet<Role> Roles => Set<Role>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // Les entreprises "supprimees" (soft-delete) n'apparaissent plus jamais
-        // dans aucune requete, sans avoir a le repeter partout dans le controller
         modelBuilder.Entity<Entreprise>().HasQueryFilter(e => !e.EstSupprime);
 
-        // La colonne "statut" en base est un VARCHAR (ex: 'Actif'), pas un entier.
-        // Sans cette ligne, EF Core essaie par defaut de lire l'enum comme un int
-        // et plante avec "Reading as System.Int32 is not supported...".
         modelBuilder.Entity<Abonnement>()
             .Property(a => a.Statut)
             .HasConversion<string>();
+
+        modelBuilder.Entity<Utilisateur>()
+            .HasIndex(u => u.Email)
+            .IsUnique();
+
+        modelBuilder.Entity<Utilisateur>()
+            .HasOne(u => u.Role)
+            .WithMany(r => r.Utilisateurs)
+            .HasForeignKey(u => u.RoleId);
     }
 }
