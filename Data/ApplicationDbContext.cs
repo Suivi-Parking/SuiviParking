@@ -11,6 +11,8 @@ public class ApplicationDbContext : DbContext
     }
 
     public DbSet<Entreprise> Entreprises => Set<Entreprise>();
+    public DbSet<Paiement> Paiements => Set<Paiement>();
+    public DbSet<Parking> Parkings => Set<Parking>();
     public DbSet<Abonnement> Abonnements => Set<Abonnement>();
     public DbSet<Utilisateur> Utilisateurs => Set<Utilisateur>();
     public DbSet<Role> Roles => Set<Role>();
