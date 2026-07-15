@@ -104,11 +104,39 @@
         actionModal.mode = mode
         actionModal.abonnement = abonnement
         actionModal.visible = true
+        actionError.value = ''
     }
 
-    async function onActionConfirmed() {
-        actionModal.visible = false
-        await loadData()
+    const actionError = ref('')
+
+    // Endpoint different selon l'action : la modal ne fait que remonter les
+    // donnees saisies (payload), c'est ici qu'on appelle le bon endpoint.
+    const endpointParMode = {
+        renouveler: (id) => `/api/abonnements/${id}/renouveler`,
+        suspendre: (id) => `/api/abonnements/${id}/suspendre`,
+        resilier: (id) => `/api/abonnements/${id}/resilier`,
+    }
+
+    async function onActionConfirm(payload) {
+        actionError.value = ''
+        try {
+            const url = endpointParMode[actionModal.mode](actionModal.abonnement.id)
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+
+            if (!res.ok) {
+                actionError.value = (await res.text()) || `Erreur ${res.status}`
+                return
+            }
+
+            actionModal.visible = false
+            await loadData()
+        } catch (e) {
+            actionError.value = "Impossible de contacter le serveur."
+        }
     }
 
     const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / pageSize.value)))
@@ -183,10 +211,14 @@
             </p>
         </div>
 
-        <AbonnementActionModal v-if="actionModal.visible"
-                               :mode="actionModal.mode"
-                               :abonnement="actionModal.abonnement"
-                               @confirmed="onActionConfirmed"
-                               @close="actionModal.visible = false" />
+        <div v-if="actionModal.visible">
+            <AbonnementActionModal :mode="actionModal.mode"
+                                   :abonnement="actionModal.abonnement"
+                                   @confirm="onActionConfirm"
+                                   @cancel="actionModal.visible = false" />
+            <p v-if="actionError" class="fixed bottom-4 right-4 bg-danger text-white px-4 py-2 rounded-lg shadow-lg text-sm">
+                {{ actionError }}
+            </p>
+        </div>
     </div>
 </template>

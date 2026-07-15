@@ -10,33 +10,49 @@
 </template>
 
 <script setup>
-    import { ref, computed } from 'vue'
+import { ref, computed } from 'vue'
 
-    const props = defineProps({
-        view: { type: String, default: 'entreprises' }
-    })
+const props = defineProps({
+    view: { type: String, default: 'entreprises' }
+})
 
-    const q = ref('')
+const q = ref('')
 
-    const titles = {
-        dashboard: 'Tableau de bord',
-        entreprises: 'Entreprises clientes',
-        utilisateurs: 'Utilisateurs',
-        abonnements: 'Abonnements',
-        facturation: 'Facturation',
+const titles = {
+    dashboard: 'Tableau de bord',
+    entreprises: 'Entreprises clientes',
+    abonnements: 'Abonnements',
+    employes: 'Employés',
+    vehicules: 'Véhicules',
+    facturation: 'Facturation',
+}
+
+const title = computed(() => titles[props.view] || props.view)
+
+const showCreate = computed(() =>
+    ['entreprises', 'abonnements', 'employes', 'vehicules', 'Parking'].includes(props.view)
+)
+
+const createLabel = computed(() => {
+    const labels = {
+        entreprises: '+ Nouvelle entreprise',
+        abonnements: '+ Nouvel abonnement',
+        employes: '+ Nouvel employé',
+        vehicules: '+ Nouveau véhicule',
+        Parking: '+ Nouveau parking'
     }
+    return labels[props.view] ?? '+ Nouveau'
+})
 
-    const title = computed(() => titles[props.view] || props.view)
-
-    // Seules les vues Entreprises et Abonnements ont une action de creation pour l'instant
-    const showCreate = computed(() => props.view === 'entreprises' || props.view === 'abonnements')
-
-    const createLabel = computed(() =>
-        props.view === 'abonnements' ? '+ Nouvel abonnement' : '+ Nouvelle entreprise'
-    )
-
-    function create() {
-        const eventName = props.view === 'abonnements' ? 'create-abonnement' : 'create-entreprise'
-        window.dispatchEvent(new CustomEvent(eventName))
+function create() {
+    const events = {
+        entreprises: 'create-entreprise',
+        abonnements: 'create-abonnement',
+        employes: 'create-employe',
+        vehicules: 'create-vehicule',
+        Parking: 'create-parking'
     }
+    const eventName = events[props.view]
+    if (eventName) window.dispatchEvent(new CustomEvent(eventName))
+}
 </script>
