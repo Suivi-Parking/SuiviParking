@@ -1,5 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Parkini.Entities;
+using SuiviParking.API.Models;
 
 namespace Parkini.Infrastructure.Data;
 
@@ -14,21 +15,55 @@ public class ApplicationDbContext : DbContext
     public DbSet<Abonnement> Abonnements => Set<Abonnement>();
     public DbSet<Parking> Parkings => Set<Parking>();
     public DbSet<Zone> Zones => Set<Zone>();
+    public DbSet<HistoriqueParking> HistoriqueParkings => Set<HistoriqueParking>();
+    public DbSet<Utilisateur> Utilisateurs => Set<Utilisateur>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<Employe> Employes => Set<Employe>();
+    public DbSet<Vehicule> Vehicules => Set<Vehicule>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // Soft-delete global : les entreprises et parkings "supprimes"
-        // n'apparaissent plus jamais dans aucune requete.
+        // ===== Soft-delete (archivage) =====
         modelBuilder.Entity<Entreprise>().HasQueryFilter(e => !e.EstSupprime);
         modelBuilder.Entity<Parking>().HasQueryFilter(p => !p.EstSupprime);
 
-        // La colonne "statut" en base est un VARCHAR (ex: 'Actif'), pas un entier.
-        // Sans cette ligne, EF Core essaie par defaut de lire l'enum comme un int
-        // et plante avec "Reading as System.Int32 is not supported...".
+        // Si une entreprise est archivee, ses abonnements ne doivent plus apparaitre non plus
+        modelBuilder.Entity<Abonnement>().HasQueryFilter(a => !a.Entreprise!.EstSupprime);
+
+        // ===== Conversions enum -> string (colonnes VARCHAR en base) =====
         modelBuilder.Entity<Abonnement>()
             .Property(a => a.Statut)
             .HasConversion<string>();
+
+        modelBuilder.Entity<Parking>()
+            .Property(p => p.Statut)
+            .HasConversion<string>();
+
+        // ===== Utilisateurs / Roles (travail du collegue) =====
+        modelBuilder.Entity<Utilisateur>()
+            .HasIndex(u => u.Email)
+            .IsUnique();
+
+        modelBuilder.Entity<Utilisateur>()
+            .HasOne(u => u.Role)
+            .WithMany(r => r.Utilisateurs)
+            .HasForeignKey(u => u.RoleId);
+
+        // ===== Employes / Vehicules (travail du collegue) =====
+        modelBuilder.Entity<Employe>()
+            .HasIndex(e => e.Email)
+            .IsUnique();
+
+        modelBuilder.Entity<Vehicule>()
+            .HasIndex(v => v.Immatriculation)
+            .IsUnique();
+
+        modelBuilder.Entity<Employe>()
+            .HasMany(e => e.Vehicules)
+            .WithOne(v => v.Employe)
+            .HasForeignKey(v => v.EmployeId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

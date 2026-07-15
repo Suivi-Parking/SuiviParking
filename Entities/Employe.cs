@@ -1,11 +1,20 @@
-namespace Parkini.Entities;
+﻿using Parkini.Entities;
 
-public class Employe
+namespace SuiviParking.API.Models
 {
-    public int Id { get; set; }
-    public int EntrepriseId { get; set; }
-    public Entreprise? Entreprise { get; set; }
-    public string Nom { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string Telephone { get; set; } = string.Empty;
+    public class Employe
+    {
+        public int Id { get; set; }
+        public string Nom { get; set; } = string.Empty;
+        public string Prenom { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Telephone { get; set; } = string.Empty;
+        public string Fonction { get; set; } = string.Empty;
+        public string Statut { get; set; } = "ACTIF";
+        public DateTime DateRattachement { get; set; } = DateTime.UtcNow;
+        public int EntrepriseId { get; set; }
+
+        // Relation
+        public ICollection<Vehicule> Vehicules { get; set; } = new List<Vehicule>();
+    }
 }

@@ -10,11 +10,13 @@ const parking = ref(null)
 const isLoading = ref(true)
 const errorMsg = ref('')
 
-const newZone = reactive({ nom: '', nombrePlaces: 0 })
+const typesZone = ['Standard', 'Visiteurs', 'Residents', 'VIP', 'Livraison', 'Autre']
+
+const newZone = reactive({ nom: '', type: 'Standard', nombrePlaces: 0 })
 const newZoneError = ref('')
 
 const editingZoneId = ref(null)
-const editZoneForm = reactive({ nom: '', nombrePlaces: 0 })
+const editZoneForm = reactive({ nom: '', type: 'Standard', nombrePlaces: 0 })
 const editZoneError = ref('')
 
 const occupationInputs = reactive({}) // { [zoneId]: valeur saisie }
@@ -26,7 +28,6 @@ async function loadDetail() {
     const res = await fetch(`/api/parkings/${props.parkingId}`)
     if (!res.ok) throw new Error()
     parking.value = await res.json()
-    // initialise les champs d'ajustement d'occupation avec les valeurs actuelles
     parking.value.zones.forEach(z => {
       occupationInputs[z.id] = z.placesOccupees
     })
@@ -59,6 +60,7 @@ async function ajouterZone() {
     return
   }
   newZone.nom = ''
+  newZone.type = 'Standard'
   newZone.nombrePlaces = 0
   await loadDetail()
   emit('changed')
@@ -67,6 +69,7 @@ async function ajouterZone() {
 function startEditZone(zone) {
   editingZoneId.value = zone.id
   editZoneForm.nom = zone.nom
+  editZoneForm.type = zone.type
   editZoneForm.nombrePlaces = zone.nombrePlaces
   editZoneError.value = ''
 }
@@ -88,8 +91,26 @@ async function saveEditZone(zoneId) {
 }
 
 async function supprimerZone(zoneId) {
-  if (!confirm('Supprimer cette zone ?')) return
-  await fetch(`/api/parkings/zones/${zoneId}`, { method: 'DELETE' })
+  if (!confirm('Supprimer cette zone ? (impossible si c\'est la dernière du parking)')) return
+  const res = await fetch(`/api/parkings/zones/${zoneId}`, { method: 'DELETE' })
+  if (!res.ok) {
+    alert((await res.text()) || 'Suppression impossible.')
+    return
+  }
+  await loadDetail()
+  emit('changed')
+}
+
+async function toggleActive(zone) {
+  const res = await fetch(`/api/parkings/zones/${zone.id}/statut`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(!zone.estActive)
+  })
+  if (!res.ok) {
+    alert((await res.text()) || 'Erreur lors du changement de statut.')
+    return
+  }
   await loadDetail()
   emit('changed')
 }
@@ -114,11 +135,13 @@ onMounted(loadDetail)
 
 <template>
   <div class="fixed inset-0 bg-gray-900/40 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-xl shadow-xl w-[720px] max-h-[90vh] overflow-y-auto">
+    <div class="bg-white rounded-xl shadow-xl w-[760px] max-h-[90vh] overflow-y-auto">
       <header class="p-4 border-b flex justify-between items-center sticky top-0 bg-white">
         <div>
           <h3 class="font-semibold text-lg">{{ parking?.nom ?? 'Détail du parking' }}</h3>
-          <p v-if="parking" class="text-xs text-gray-400">{{ parking.adresse }}</p>
+          <p v-if="parking" class="text-xs text-gray-400">
+            {{ parking.code }} · {{ parking.adresse }}
+          </p>
         </div>
         <button type="button" class="text-gray-400 hover:text-gray-600" @click="$emit('close')">✕</button>
       </header>
@@ -131,12 +154,12 @@ onMounted(loadDetail)
           <!-- Recapitulatif global -->
           <div class="grid grid-cols-3 gap-3 mb-6">
             <div class="bg-panel rounded-lg p-3">
-              <p class="text-xs text-gray-400">Capacité max</p>
+              <p class="text-xs text-gray-400">Capacité totale (zones)</p>
               <p class="text-xl font-semibold">{{ parking.capaciteMax }}</p>
             </div>
             <div class="bg-panel rounded-lg p-3">
-              <p class="text-xs text-gray-400">Places totales (zones)</p>
-              <p class="text-xl font-semibold">{{ parking.placesTotales }}</p>
+              <p class="text-xs text-gray-400">Places occupées</p>
+              <p class="text-xl font-semibold">{{ parking.placesOccupees }}</p>
             </div>
             <div class="bg-panel rounded-lg p-3">
               <p class="text-xs text-gray-400">Taux d'occupation</p>
@@ -147,10 +170,18 @@ onMounted(loadDetail)
           <!-- Liste des zones -->
           <h4 class="font-medium mb-2">Zones</h4>
           <div class="space-y-3 mb-6">
-            <div v-for="zone in parking.zones" :key="zone.id" class="border rounded-lg p-3">
+            <div
+              v-for="zone in parking.zones"
+              :key="zone.id"
+              class="border rounded-lg p-3"
+              :class="!zone.estActive ? 'opacity-50 bg-gray-50' : ''"
+            >
               <template v-if="editingZoneId === zone.id">
                 <div class="flex gap-2 mb-2">
                   <input v-model="editZoneForm.nom" class="flex-1 px-2 py-1 border rounded" />
+                  <select v-model="editZoneForm.type" class="w-32 px-2 py-1 border rounded text-sm">
+                    <option v-for="t in typesZone" :key="t" :value="t">{{ t }}</option>
+                  </select>
                   <input v-model.number="editZoneForm.nombrePlaces" type="number" min="0" class="w-24 px-2 py-1 border rounded" />
                 </div>
                 <p v-if="editZoneError" class="text-danger text-xs mb-2">{{ editZoneError }}</p>
@@ -163,10 +194,17 @@ onMounted(loadDetail)
               <template v-else>
                 <div class="flex justify-between items-start mb-2">
                   <div>
-                    <p class="font-medium">{{ zone.nom }}</p>
+                    <p class="font-medium">
+                      {{ zone.nom }}
+                      <span class="text-xs font-normal text-gray-400">({{ zone.type }})</span>
+                      <span v-if="!zone.estActive" class="text-xs font-normal text-gray-400">— désactivée</span>
+                    </p>
                     <p class="text-xs text-gray-400">{{ zone.placesOccupees }}/{{ zone.nombrePlaces }} places · {{ zone.tauxOccupation }}%</p>
                   </div>
                   <div class="flex gap-2">
+                    <button class="text-xs text-gray-500 hover:text-primary" @click="toggleActive(zone)">
+                      {{ zone.estActive ? 'Désactiver' : 'Activer' }}
+                    </button>
                     <button class="text-xs text-gray-500 hover:text-primary" @click="startEditZone(zone)">Modifier</button>
                     <button class="text-xs text-gray-500 hover:text-danger" @click="supprimerZone(zone.id)">Supprimer</button>
                   </div>
@@ -204,6 +242,9 @@ onMounted(loadDetail)
             <h4 class="font-medium mb-2">Ajouter une zone</h4>
             <div class="flex gap-2">
               <input v-model="newZone.nom" placeholder="Nom (ex: Zone C)" class="flex-1 px-3 py-2 border rounded-lg" />
+              <select v-model="newZone.type" class="w-32 px-3 py-2 border rounded-lg text-sm">
+                <option v-for="t in typesZone" :key="t" :value="t">{{ t }}</option>
+              </select>
               <input v-model.number="newZone.nombrePlaces" type="number" min="1" placeholder="Places" class="w-28 px-3 py-2 border rounded-lg" />
               <button class="px-4 py-2 rounded-lg bg-primary text-white" @click="ajouterZone">Ajouter</button>
             </div>

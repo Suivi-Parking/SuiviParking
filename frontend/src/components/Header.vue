@@ -1,48 +1,58 @@
 <template>
-    <header class="flex items-center justify-between p-4 bg-panel border-b">
+    <header class="flex items-center justify-between p-4 bg-[var(--bg)] border-b">
         <div class="flex items-center gap-4">
-            <nav class="text-sm text-gray-400">ParkLine › <span class="font-semibold text-gray-700">{{ title }}</span></nav>
+            <nav class="text-sm text-muted">ParkLine › <span class="font-semibold">{{ title }}</span></nav>
         </div>
         <div class="flex items-center gap-3">
-            <input v-model="q" placeholder="Rechercher..." class="px-4 py-2 rounded-lg bg-white border" />
-            <button v-if="showCreate" type="button" class="bg-primary text-white px-4 py-2 rounded-lg" @click="create">{{ createLabel }}</button>
+            <button v-if="showCreate" type="button" class="primary" @click="create">{{ createLabel }}</button>
         </div>
     </header>
 </template>
 
 <script setup>
-    import { ref, computed } from 'vue'
+import { ref, computed } from 'vue'
 
-    const props = defineProps({
-        view: { type: String, default: 'entreprises' }
-    })
+const props = defineProps({
+    view: { type: String, default: 'entreprises' }
+})
 
-    const q = ref('')
+const q = ref('')
 
-    const titles = {
-        dashboard: 'Tableau de bord',
-        entreprises: 'Entreprises clientes',
-        utilisateurs: 'Utilisateurs',
-        abonnements: 'Abonnements',
-        Parking: 'Gestion des parkings',
-        facturation: 'Facturation',
+const titles = {
+    dashboard: 'Tableau de bord',
+    entreprises: 'Entreprises clientes',
+    abonnements: 'Abonnements',
+    employes: 'Employés',
+    vehicules: 'Véhicules',
+    facturation: 'Facturation',
+}
+
+const title = computed(() => titles[props.view] || props.view)
+
+const showCreate = computed(() =>
+    ['entreprises', 'abonnements', 'employes', 'vehicules', 'Parking'].includes(props.view)
+)
+
+const createLabel = computed(() => {
+    const labels = {
+        entreprises: '+ Nouvelle entreprise',
+        abonnements: '+ Nouvel abonnement',
+        employes: '+ Nouvel employé',
+        vehicules: '+ Nouveau véhicule',
+        Parking: '+ Nouveau parking'
     }
+    return labels[props.view] ?? '+ Nouveau'
+})
 
-    const title = computed(() => titles[props.view] || props.view)
-
-    // Vues ayant une action de creation depuis le Header
-    const createConfig = {
-        entreprises: { label: '+ Nouvelle entreprise', event: 'create-entreprise' },
-        abonnements: { label: '+ Nouvel abonnement', event: 'create-abonnement' },
-        Parking: { label: '+ Nouveau parking', event: 'create-parking' },
+function create() {
+    const events = {
+        entreprises: 'create-entreprise',
+        abonnements: 'create-abonnement',
+        employes: 'create-employe',
+        vehicules: 'create-vehicule',
+        Parking: 'create-parking'
     }
-
-    const showCreate = computed(() => !!createConfig[props.view])
-    const createLabel = computed(() => createConfig[props.view]?.label ?? '')
-
-    function create() {
-        const config = createConfig[props.view]
-        if (!config) return
-        window.dispatchEvent(new CustomEvent(config.event))
-    }
+    const eventName = events[props.view]
+    if (eventName) window.dispatchEvent(new CustomEvent(eventName))
+}
 </script>

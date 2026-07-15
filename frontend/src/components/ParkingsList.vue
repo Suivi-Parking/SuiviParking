@@ -16,7 +16,7 @@ const showForm = ref(false)
 const editingParking = ref(null) // null = creation, sinon objet = edition
 const createError = ref('')
 
-const detailParkingId = ref(null) // id du parking dont on affiche le detail, null = ferme
+const detailParkingId = ref(null)
 
 async function loadData() {
   isLoading.value = true
@@ -47,11 +47,13 @@ function onSearch() {
 function openCreate() {
   editingParking.value = null
   showForm.value = true
+  createError.value = ''
 }
 
 function openEdit(parking) {
   editingParking.value = parking
   showForm.value = true
+  createError.value = ''
 }
 
 async function onSave(formData) {
@@ -68,6 +70,7 @@ async function onSave(formData) {
     })
 
     if (!res.ok) {
+      // 409 = code deja utilise, 400 = validation (ex: horaires manquants, zones invalides)
       createError.value = (await res.text()) || `Erreur ${res.status}`
       return
     }
@@ -80,8 +83,14 @@ async function onSave(formData) {
 }
 
 async function onDelete(parking) {
-  if (!confirm(`Supprimer le parking "${parking.nom}" ?`)) return
-  await fetch(`/api/parkings/${parking.id}`, { method: 'DELETE' })
+  if (!confirm(`Archiver le parking "${parking.nom}" ?`)) return
+
+  const res = await fetch(`/api/parkings/${parking.id}`, { method: 'DELETE' })
+  if (!res.ok) {
+    // Peut echouer si le parking a des acces recents (regle metier du ticket)
+    alert((await res.text()) || "Impossible d'archiver ce parking.")
+    return
+  }
   await loadData()
 }
 
@@ -90,7 +99,6 @@ function openDetail(parking) {
 }
 
 async function onDetailChanged() {
-  // Une modification de zone/occupation impacte les chiffres affiches dans la liste
   await loadData()
 }
 
@@ -116,8 +124,8 @@ onUnmounted(() => {
       <input
         v-model="search"
         @keyup.enter="onSearch"
-        placeholder="Rechercher un parking..."
-        class="px-4 py-2 rounded-lg border w-64"
+        placeholder="Rechercher par nom, code ou adresse..."
+        class="px-4 py-2 rounded-lg border w-72"
       />
     </div>
 
@@ -128,7 +136,8 @@ onUnmounted(() => {
       <thead>
         <tr class="text-left text-xs uppercase text-gray-500 border-b">
           <th class="p-3">Parking</th>
-          <th class="p-3">Capacité max</th>
+          <th class="p-3">Code</th>
+          <th class="p-3">Statut</th>
           <th class="p-3">Zones</th>
           <th class="p-3">Occupation</th>
           <th class="p-3">Actions</th>
@@ -144,7 +153,7 @@ onUnmounted(() => {
           @supprimer="onDelete(p)"
         />
         <tr v-if="data.length === 0">
-          <td colspan="5" class="text-center p-6 text-gray-400">Aucun parking trouvé.</td>
+          <td colspan="6" class="text-center p-6 text-gray-400">Aucun parking trouvé.</td>
         </tr>
       </tbody>
     </table>
@@ -161,7 +170,7 @@ onUnmounted(() => {
         @save="onSave"
         @cancel="showForm = false"
       />
-      <p v-if="createError" class="fixed bottom-4 right-4 bg-danger text-white px-4 py-2 rounded-lg shadow-lg text-sm">
+      <p v-if="createError" class="fixed bottom-4 right-4 bg-danger text-white px-4 py-2 rounded-lg shadow-lg text-sm max-w-md">
         {{ createError }}
       </p>
     </div>

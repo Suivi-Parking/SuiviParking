@@ -1,4 +1,6 @@
-﻿namespace Parkini.Entities;
+﻿using SuiviParking.API.Models;
+
+namespace Parkini.Entities;
 
 public class Entreprise
 {
