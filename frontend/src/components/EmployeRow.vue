@@ -23,9 +23,11 @@
     <td class="p-3">
       <div style="display:flex;gap:6px;">
         <button type="button" @click="$emit('view', employe)" title="Voir">👁️</button>
-        <button type="button" @click="$emit('edit', employe)" title="Modifier">✏️</button>
-        <button type="button" @click="$emit('delete', employe)" 
-          title="Supprimer" style="color:#ef4444;">🗑️</button>
+        <template v-if="authStore.can(PERMISSIONS.EMPLOYES_WRITE)">
+          <button type="button" @click="$emit('edit', employe)" title="Modifier">✏️</button>
+          <button type="button" @click="$emit('delete', employe)" 
+            title="Supprimer" style="color:#ef4444;">🗑️</button>
+        </template>
       </div>
     </td>
   </tr>
@@ -33,6 +35,8 @@
 
 <script setup>
 import { computed } from 'vue'
+import { authStore } from '../store/auth'
+import { PERMISSIONS } from '../services/permissions'
 
 const props = defineProps({
   employe: { type: Object, required: true }
