@@ -1,14 +1,17 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Parkini.Application.DTOs;
 using Parkini.Entities;
 using Parkini.Infrastructure.Data;
+using Parkini.Infrastructure.Security;
 
 namespace Parkini.Controllers;
 
 
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class VehiculeController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -19,6 +22,7 @@ namespace Parkini.Controllers;
         }
 
         // GET api/vehicule
+        [HasPermission(Permissions.VehiculesRead)]
         [HttpGet]
         public async Task<ActionResult<VehiculeListeResponseDto>> GetAll(
             [FromQuery] int page = 1,
@@ -62,6 +66,7 @@ namespace Parkini.Controllers;
         }
 
         // GET api/vehicule/5
+        [HasPermission(Permissions.VehiculesRead)]
         [HttpGet("{id}")]
         public async Task<ActionResult<VehiculeDto>> GetById(int id)
         {
@@ -88,6 +93,7 @@ namespace Parkini.Controllers;
         }
 
         // POST api/vehicule
+        [HasPermission(Permissions.VehiculesWrite)]
         [HttpPost]
         public async Task<ActionResult<VehiculeDto>> Create(CreateVehiculeDto dto)
         {
@@ -128,6 +134,7 @@ namespace Parkini.Controllers;
         }
 
         // PUT api/vehicule/5
+        [HasPermission(Permissions.VehiculesWrite)]
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, UpdateVehiculeDto dto)
         {
@@ -158,6 +165,7 @@ namespace Parkini.Controllers;
         }
 
         // DELETE api/vehicule/5
+        [HasPermission(Permissions.VehiculesWrite)]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
