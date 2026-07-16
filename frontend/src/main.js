@@ -20,5 +20,7 @@ window.fetch = (input, init = {}) => {
         init = { ...init, headers }
     }
 
+    return nativeFetch(input, init)
+}
 
 createApp(App).mount('#app')
