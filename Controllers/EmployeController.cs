@@ -1,14 +1,17 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Parkini.Application.DTOs;
 using Parkini.Entities;
 using Parkini.Infrastructure.Data;
+using Parkini.Infrastructure.Security;
 using SuiviParking.API.Models;
 
 namespace Parkini.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class EmployeController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -19,6 +22,7 @@ public class EmployeController : ControllerBase
     }
 
     // GET api/employe
+    [HasPermission(Permissions.EmployesRead)]
     [HttpGet]
     public async Task<ActionResult<EmployeListeResponseDto>> GetAll(
         [FromQuery] int page = 1,
@@ -72,6 +76,7 @@ public class EmployeController : ControllerBase
     }
 
     // GET api/employe/5
+    [HasPermission(Permissions.EmployesRead)]
     [HttpGet("{id}")]
     public async Task<ActionResult<EmployeDto>> GetById(int id)
     {
@@ -108,6 +113,7 @@ public class EmployeController : ControllerBase
     }
 
     // POST api/employe
+    [HasPermission(Permissions.EmployesWrite)]
     [HttpPost]
     public async Task<ActionResult<EmployeDto>> Create(CreateEmployeDto dto)
     {
@@ -146,6 +152,7 @@ public class EmployeController : ControllerBase
     }
 
     // PUT api/employe/5
+    [HasPermission(Permissions.EmployesWrite)]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, UpdateEmployeDto dto)
     {
@@ -173,6 +180,7 @@ public class EmployeController : ControllerBase
     }
 
     // DELETE api/employe/5
+    [HasPermission(Permissions.EmployesWrite)]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
