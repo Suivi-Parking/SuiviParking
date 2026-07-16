@@ -1,13 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Parkini.Application.DTOs;
 using Parkini.Entities;
 using Parkini.Infrastructure.Data;
+using Parkini.Infrastructure.Security;
 
 namespace Parkini.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class EntreprisesController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -18,6 +21,7 @@ public class EntreprisesController : ControllerBase
     }
 
     // GET /api/entreprises?page=1&pageSize=10&search=xxx&statut=Actif
+    [HasPermission(Permissions.EntreprisesRead)]
     [HttpGet]
     public async Task<ActionResult<EntrepriseListeResponseDto>> GetAll(
         [FromQuery] int page = 1,
@@ -113,6 +117,7 @@ public class EntreprisesController : ControllerBase
     }
 
     // GET /api/entreprises/5
+    [HasPermission(Permissions.EntreprisesRead)]
     [HttpGet("{id:int}")]
     public async Task<ActionResult<EntrepriseDto>> GetById(int id)
     {
@@ -139,6 +144,7 @@ public class EntreprisesController : ControllerBase
     }
 
     // POST /api/entreprises
+    [HasPermission(Permissions.EntreprisesWrite)]
     [HttpPost]
     public async Task<ActionResult<EntrepriseDto>> Create(CreateEntrepriseDto dto)
     {
@@ -178,6 +184,7 @@ public class EntreprisesController : ControllerBase
     }
 
     // PUT /api/entreprises/5
+    [HasPermission(Permissions.EntreprisesWrite)]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, UpdateEntrepriseDto dto)
     {
@@ -197,6 +204,7 @@ public class EntreprisesController : ControllerBase
     }
 
     // DELETE /api/entreprises/5 (soft delete)
+    [HasPermission(Permissions.EntreprisesWrite)]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
