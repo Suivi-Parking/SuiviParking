@@ -11,6 +11,8 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { authStore } from '../store/auth'
+import { PERMISSIONS } from '../services/permissions'
 
 const props = defineProps({
     view: { type: String, default: 'entreprises' }
@@ -29,9 +31,19 @@ const titles = {
 
 const title = computed(() => titles[props.view] || props.view)
 
-const showCreate = computed(() =>
-    ['entreprises', 'abonnements', 'employes', 'vehicules', 'Parking'].includes(props.view)
-)
+// Permission d'écriture requise pour créer un nouvel élément dans la vue active.
+const writePermissionByView = {
+    entreprises: PERMISSIONS.ENTREPRISES_WRITE,
+    abonnements: PERMISSIONS.ABONNEMENTS_WRITE,
+    employes: PERMISSIONS.EMPLOYES_WRITE,
+    vehicules: PERMISSIONS.VEHICULES_WRITE,
+    Parking: PERMISSIONS.PARKINGS_WRITE,
+}
+
+const showCreate = computed(() => {
+    const requiredPermission = writePermissionByView[props.view]
+    return !!requiredPermission && authStore.can(requiredPermission)
+})
 
 const createLabel = computed(() => {
     const labels = {
