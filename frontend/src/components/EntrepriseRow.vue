@@ -19,14 +19,18 @@
     <td class="p-4">{{ formattedDate }}</td>
     <td class="p-4 text-center space-x-2 text-muted">
       <button type="button" title="Voir" @click="emit('view', entreprise)">👁️</button>
-      <button type="button" title="Modifier" @click="emit('edit', entreprise)">✏️</button>
-      <button type="button" title="Supprimer" @click="emit('delete', entreprise)">🗑️</button>
+      <template v-if="authStore.can(PERMISSIONS.ENTREPRISES_WRITE)">
+        <button type="button" title="Modifier" @click="emit('edit', entreprise)">✏️</button>
+        <button type="button" title="Supprimer" @click="emit('delete', entreprise)">🗑️</button>
+      </template>
     </td>
   </tr>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import { authStore } from '../store/auth'
+import { PERMISSIONS } from '../services/permissions'
 const props = defineProps({ entreprise: Object })
 const emit = defineEmits(['view','edit','delete'])
 
