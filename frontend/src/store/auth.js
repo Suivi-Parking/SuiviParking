@@ -1,13 +1,26 @@
 import { reactive } from 'vue'
 import api from '../services/api'
 
+function readStoredPermissions() {
+    try {
+        return JSON.parse(localStorage.getItem('permissions') || '[]')
+    } catch {
+        return []
+    }
+}
+
 export const authStore = reactive({
     token: localStorage.getItem('token') || '',
     email: localStorage.getItem('email') || '',
     role: localStorage.getItem('role') || '',
+    permissions: readStoredPermissions(),
 
     get isAuthenticated() {
         return !!this.token
+    },
+
+    can(permission) {
+        return this.permissions.includes(permission)
     },
 
     async login(email, motDePasse) {
@@ -15,17 +28,21 @@ export const authStore = reactive({
         this.token = response.data.token
         this.email = response.data.email
         this.role = response.data.role
+        this.permissions = response.data.permissions || []
         localStorage.setItem('token', this.token)
         localStorage.setItem('email', this.email)
         localStorage.setItem('role', this.role)
+        localStorage.setItem('permissions', JSON.stringify(this.permissions))
     },
 
     logout() {
         this.token = ''
         this.email = ''
         this.role = ''
+        this.permissions = []
         localStorage.removeItem('token')
         localStorage.removeItem('email')
         localStorage.removeItem('role')
+        localStorage.removeItem('permissions')
     },
 })
