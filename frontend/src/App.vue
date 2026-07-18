@@ -31,6 +31,7 @@
                 <EmployesList v-else-if="active === 'employes'" />
 
                 <VehiculesList v-else-if="active === 'vehicules'" />
+                <AccesList v-else-if="active === 'acces'" />
 
                 <ModulePlaceholder v-else :titre="titreModuleActif" />
             </main>
@@ -54,6 +55,8 @@
     import ParkingsList from './components/ParkingsList.vue'
     import EmployesList from './components/EmployesList.vue'
     import VehiculesList from './components/VehiculesList.vue'
+    import AccesList from './components/AccesList.vue'
+
     import ModulePlaceholder from './components/ModulePlaceholder.vue'
 
 

@@ -1,6 +1,5 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Parkini.Entities;
-using SuiviParking.API.Entities;
 
 namespace Parkini.Infrastructure.Data;
 
@@ -20,6 +19,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<Employe> Employes => Set<Employe>();
     public DbSet<Vehicule> Vehicules => Set<Vehicule>();
+    public DbSet<Acces> Acces => Set<Acces>(); 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -65,5 +65,29 @@ public class ApplicationDbContext : DbContext
             .WithOne(v => v.Employe)
             .HasForeignKey(v => v.EmployeId)
             .OnDelete(DeleteBehavior.Cascade);
+        
+        // Relation Accès → Véhicule
+        modelBuilder.Entity<Acces>()
+            .HasOne(a => a.Vehicule)
+            .WithMany()
+            .HasForeignKey(a => a.VehiculeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Relation Accès → Parking
+        modelBuilder.Entity<Acces>()
+            .HasOne(a => a.Parking)
+            .WithMany()
+            .HasForeignKey(a => a.ParkingId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Relation Accès → Abonnement
+        modelBuilder.Entity<Acces>()
+        .HasOne(a => a.Abonnement)
+        .WithMany()
+        .HasForeignKey(a => a.AbonnementId)
+        .OnDelete(DeleteBehavior.SetNull);
+
     }
+
+
 }

@@ -171,6 +171,11 @@
                     label: 'Parking',
                     icon: icons.car
                 },
+                {
+                    key: 'acces',
+                    label: 'Accès',
+                    icon: icons.card
+                },
 
                 {
                     key: 'facturation',

@@ -32,11 +32,11 @@ namespace parkini.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("DateDebut")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("date_debut");
 
                     b.Property<DateTime>("DateFin")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("date_fin");
 
                     b.Property<int>("EntrepriseId")
@@ -77,6 +77,123 @@ namespace parkini.Migrations
                     b.ToTable("abonnements", (string)null);
                 });
 
+            modelBuilder.Entity("Parkini.Entities.Acces", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AbonnementId")
+                        .HasColumnType("integer")
+                        .HasColumnName("abonnement_id");
+
+                    b.Property<DateTime>("DateHeureEntree")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("date_heure_entree");
+
+                    b.Property<DateTime?>("DateHeureSortie")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("date_heure_sortie");
+
+                    b.Property<bool>("EstAutorise")
+                        .HasColumnType("boolean")
+                        .HasColumnName("est_autorise");
+
+                    b.Property<string>("MotifRefus")
+                        .HasColumnType("text")
+                        .HasColumnName("motif_refus");
+
+                    b.Property<int>("ParkingId")
+                        .HasColumnType("integer")
+                        .HasColumnName("parking_id");
+
+                    b.Property<string>("Statut")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("statut");
+
+                    b.Property<int>("VehiculeId")
+                        .HasColumnType("integer")
+                        .HasColumnName("vehicule_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_acces");
+
+                    b.HasIndex("AbonnementId")
+                        .HasDatabaseName("ix_acces_abonnement_id");
+
+                    b.HasIndex("ParkingId")
+                        .HasDatabaseName("ix_acces_parking_id");
+
+                    b.HasIndex("VehiculeId")
+                        .HasDatabaseName("ix_acces_vehicule_id");
+
+                    b.ToTable("acces", (string)null);
+                });
+
+            modelBuilder.Entity("Parkini.Entities.Employe", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("DateRattachement")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("date_rattachement");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("email");
+
+                    b.Property<int>("EntrepriseId")
+                        .HasColumnType("integer")
+                        .HasColumnName("entreprise_id");
+
+                    b.Property<string>("Fonction")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("fonction");
+
+                    b.Property<string>("Nom")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("nom");
+
+                    b.Property<string>("Prenom")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("prenom");
+
+                    b.Property<string>("Statut")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("statut");
+
+                    b.Property<string>("Telephone")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("telephone");
+
+                    b.HasKey("Id")
+                        .HasName("pk_employes");
+
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasDatabaseName("ix_employes_email");
+
+                    b.HasIndex("EntrepriseId")
+                        .HasDatabaseName("ix_employes_entreprise_id");
+
+                    b.ToTable("employes", (string)null);
+                });
+
             modelBuilder.Entity("Parkini.Entities.Entreprise", b =>
                 {
                     b.Property<int>("Id")
@@ -92,7 +209,7 @@ namespace parkini.Migrations
                         .HasColumnName("adresse");
 
                     b.Property<DateTime>("DateCreation")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("date_creation");
 
                     b.Property<string>("Email")
@@ -145,7 +262,7 @@ namespace parkini.Migrations
                         .HasColumnName("action");
 
                     b.Property<DateTime>("DateAction")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("date_action");
 
                     b.Property<string>("Details")
@@ -258,7 +375,7 @@ namespace parkini.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("DateCreation")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("date_creation");
 
                     b.Property<string>("Email")
@@ -402,66 +519,6 @@ namespace parkini.Migrations
                     b.ToTable("zones", (string)null);
                 });
 
-            modelBuilder.Entity("SuiviParking.API.Models.Employe", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("DateRattachement")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("date_rattachement");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("email");
-
-                    b.Property<int>("EntrepriseId")
-                        .HasColumnType("integer")
-                        .HasColumnName("entreprise_id");
-
-                    b.Property<string>("Fonction")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("fonction");
-
-                    b.Property<string>("Nom")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("nom");
-
-                    b.Property<string>("Prenom")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("prenom");
-
-                    b.Property<string>("Statut")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("statut");
-
-                    b.Property<string>("Telephone")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("telephone");
-
-                    b.HasKey("Id")
-                        .HasName("pk_employes");
-
-                    b.HasIndex("Email")
-                        .IsUnique()
-                        .HasDatabaseName("ix_employes_email");
-
-                    b.HasIndex("EntrepriseId")
-                        .HasDatabaseName("ix_employes_entreprise_id");
-
-                    b.ToTable("employes", (string)null);
-                });
-
             modelBuilder.Entity("Parkini.Entities.Abonnement", b =>
                 {
                     b.HasOne("Parkini.Entities.Entreprise", "Entreprise")
@@ -481,6 +538,45 @@ namespace parkini.Migrations
                     b.Navigation("Entreprise");
 
                     b.Navigation("Parking");
+                });
+
+            modelBuilder.Entity("Parkini.Entities.Acces", b =>
+                {
+                    b.HasOne("Parkini.Entities.Abonnement", "Abonnement")
+                        .WithMany()
+                        .HasForeignKey("AbonnementId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_acces_abonnements_abonnement_id");
+
+                    b.HasOne("Parkini.Entities.Parking", "Parking")
+                        .WithMany()
+                        .HasForeignKey("ParkingId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_acces_parkings_parking_id");
+
+                    b.HasOne("Parkini.Entities.Vehicule", "Vehicule")
+                        .WithMany()
+                        .HasForeignKey("VehiculeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_acces_vehicules_vehicule_id");
+
+                    b.Navigation("Abonnement");
+
+                    b.Navigation("Parking");
+
+                    b.Navigation("Vehicule");
+                });
+
+            modelBuilder.Entity("Parkini.Entities.Employe", b =>
+                {
+                    b.HasOne("Parkini.Entities.Entreprise", null)
+                        .WithMany("Employes")
+                        .HasForeignKey("EntrepriseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_employes_entreprises_entreprise_id");
                 });
 
             modelBuilder.Entity("Parkini.Entities.HistoriqueParking", b =>
@@ -509,7 +605,7 @@ namespace parkini.Migrations
 
             modelBuilder.Entity("Parkini.Entities.Vehicule", b =>
                 {
-                    b.HasOne("SuiviParking.API.Models.Employe", "Employe")
+                    b.HasOne("Parkini.Entities.Employe", "Employe")
                         .WithMany("Vehicules")
                         .HasForeignKey("EmployeId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -531,14 +627,9 @@ namespace parkini.Migrations
                     b.Navigation("Parking");
                 });
 
-            modelBuilder.Entity("SuiviParking.API.Models.Employe", b =>
+            modelBuilder.Entity("Parkini.Entities.Employe", b =>
                 {
-                    b.HasOne("Parkini.Entities.Entreprise", null)
-                        .WithMany("Employes")
-                        .HasForeignKey("EntrepriseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_employes_entreprises_entreprise_id");
+                    b.Navigation("Vehicules");
                 });
 
             modelBuilder.Entity("Parkini.Entities.Entreprise", b =>
@@ -560,11 +651,6 @@ namespace parkini.Migrations
             modelBuilder.Entity("Parkini.Entities.Role", b =>
                 {
                     b.Navigation("Utilisateurs");
-                });
-
-            modelBuilder.Entity("SuiviParking.API.Models.Employe", b =>
-                {
-                    b.Navigation("Vehicules");
                 });
 #pragma warning restore 612, 618
         }

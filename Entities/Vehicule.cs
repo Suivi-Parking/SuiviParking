@@ -1,4 +1,4 @@
-﻿namespace SuiviParking.API.Entities
+﻿namespace Parkini.Entities
 {
     public class Vehicule
     {
