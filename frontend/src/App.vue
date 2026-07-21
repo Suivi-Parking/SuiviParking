@@ -18,6 +18,7 @@
                 <ParkingsList v-else-if="active === 'Parking'" />
                 <EmployesList v-else-if="active === 'employes'" />
                 <VehiculesList v-else-if="active === 'vehicules'" />
+                <PaiementsList v-else-if="active === 'paiements'" />
                 <ModulePlaceholder v-else :titre="titreModuleActif" />
             </main>
         </div>
@@ -31,6 +32,7 @@ import Header from './components/Header.vue'
 import Login from './components/Login.vue'
 import EntreprisesList from './components/EntreprisesList.vue'
 import AbonnementsList from './components/AbonnementsList.vue'
+import PaiementsList from './components/PaiementsList.vue'
 import ParkingsList from './components/ParkingsList.vue'
 import EmployesList from './components/EmployesList.vue'
 import VehiculesList from './components/VehiculesList.vue'
