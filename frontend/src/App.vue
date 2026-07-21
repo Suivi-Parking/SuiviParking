@@ -15,20 +15,25 @@
             <main class="flex-1">
                 <EntreprisesList v-if="active === 'entreprises'" />
                 <AbonnementsList v-else-if="active === 'abonnements'" />
+                <ParkingsList v-else-if="active === 'Parking'" />
+                <EmployesList v-else-if="active === 'employes'" />
+                <VehiculesList v-else-if="active === 'vehicules'" />
                 <ModulePlaceholder v-else :titre="titreModuleActif" />
             </main>
         </div>
     </div>
 </template>
-
 <script setup>
 import { ref, computed } from 'vue'
 import { authStore } from './store/auth'
-import Login from './components/Login.vue'
 import Sidebar from './components/Sidebar.vue'
 import Header from './components/Header.vue'
+import Login from './components/Login.vue'
 import EntreprisesList from './components/EntreprisesList.vue'
 import AbonnementsList from './components/AbonnementsList.vue'
+import ParkingsList from './components/ParkingsList.vue'
+import EmployesList from './components/EmployesList.vue'
+import VehiculesList from './components/VehiculesList.vue'
 import ModulePlaceholder from './components/ModulePlaceholder.vue'
 
 const active = ref('entreprises')
