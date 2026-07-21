@@ -23,12 +23,7 @@ async function handleLogin() {
 <template>
     <div class="min-h-screen flex items-center justify-center bg-bg">
         <form @submit.prevent="handleLogin" class="bg-panel shadow-soft rounded-2xl p-10 w-96">
-<<<<<<< HEAD
-            <h1 class="text-2xl font-bold text-primary text-center">Parkini</h1>
-=======
-            <h1 class="text-2xl font-bold text-primary text-center">ParkLine</h1>
->>>>>>> origin/main
-            <p class="text-center text-slate-500 mb-6">Connexion administrateur</p>
+            <h1 class="text-2xl font-bold text-primary text-center">ParkLine</h1>  <p class="text-center text-slate-500 mb-6">Connexion administrateur</p>
 
             <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
             <input v-model="email"
