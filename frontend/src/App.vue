@@ -5,12 +5,7 @@
     <div v-else class="flex min-h-screen bg-bg">
         <Sidebar :active="active" @navigate="active = $event" />
         <div class="flex-1 flex flex-col">
-            <div class="flex justify-end items-center p-2 bg-panel border-b border-slate-200">
-                <span class="text-sm text-slate-500 mr-3">{{ authStore.email }} ({{ authStore.role }})</span>
-                <button @click="authStore.logout()" class="text-sm text-danger hover:underline">
-                    Se déconnecter
-                </button>
-            </div>
+            
             <Header :view="active" />
             <main class="flex-1">
                 <EntreprisesList v-if="active === 'entreprises'" />
@@ -42,7 +37,7 @@
     import NotificationsList from './components/NotificationsList.vue'
     import ModulePlaceholder from './components/ModulePlaceholder.vue'
 
-    const active = ref('entreprises')
+    const active = ref('dashboard')
 
     const labels = {
         dashboard: 'Tableau de bord',

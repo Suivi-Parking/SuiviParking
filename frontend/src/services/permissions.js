@@ -23,6 +23,7 @@ export const PERMISSIONS = {
     NOTIFICATIONS_READ: 'notifications.read',
     NOTIFICATIONS_WRITE: 'notifications.write',
 
-    PAIEMENTS_READ: 'paiments.read',
-    PAIEMENTS_WRITE: 'paiments.write',
+    PAIEMENTS_READ: 'paiements.read',
+    PAIEMENTS_WRITE: 'paiements.write',
 }
+
