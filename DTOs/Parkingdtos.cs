@@ -45,6 +45,7 @@ public class ParkingDto
     public TimeOnly? HeureFermeture { get; set; }
     public string? ImageUrl { get; set; }
     public string Statut { get; set; } = string.Empty; // "Actif" | "Inactif"
+    public DateTime DateDerniereModification { get; set; }
 
     public int NombreZones { get; set; }
 

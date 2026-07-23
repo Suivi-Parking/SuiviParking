@@ -45,4 +45,12 @@ public class AuthController : ControllerBase
         var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
         return Ok(new { message = "Authentifié.", email, role });
     }
+    
+    [HttpGet("permissions")]
+    [Authorize]
+    public IActionResult GetPermissions()
+    {
+        var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+        return Ok(new { role, permissions = RolePermissions.GetPermissions(role) });
+    }
 }

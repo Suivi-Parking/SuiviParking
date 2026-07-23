@@ -1,6 +1,4 @@
-﻿using SuiviParking.API.Models;
-
-namespace Parkini.Entities
+﻿namespace Parkini.Entities
 {
     public class Vehicule
     {
@@ -11,6 +9,7 @@ namespace Parkini.Entities
         public string Couleur { get; set; } = string.Empty;
         public string Type { get; set; } = string.Empty;
         public string Statut { get; set; } = "ACTIF";
+        public DateTime DateDerniereModification { get; set; } = DateTime.UtcNow;
 
         // Relation
         public int EmployeId { get; set; }

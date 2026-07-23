@@ -1,5 +1,7 @@
 <script setup>
 import { computed } from 'vue'
+import { authStore } from '../store/auth'
+import { PERMISSIONS } from '../services/permissions'
 
 const props = defineProps({
   parking: { type: Object, required: true }
@@ -54,15 +56,17 @@ const statutBadge = computed(() =>
         <button class="px-3 py-1.5 rounded-lg border text-xs font-medium hover:bg-gray-50" @click="$emit('voir')">
           Détail
         </button>
-        <button class="px-3 py-1.5 rounded-lg border text-xs font-medium hover:bg-gray-50" @click="$emit('modifier')">
-          Modifier
-        </button>
-        <button
-          class="px-3 py-1.5 rounded-lg border border-danger/30 text-danger text-xs font-medium hover:bg-danger/5"
-          @click="$emit('supprimer')"
-        >
-          Archiver
-        </button>
+        <template v-if="authStore.can(PERMISSIONS.PARKINGS_WRITE)">
+          <button class="px-3 py-1.5 rounded-lg border text-xs font-medium hover:bg-gray-50" @click="$emit('modifier')">
+            Modifier
+          </button>
+          <button
+            class="px-3 py-1.5 rounded-lg border border-danger/30 text-danger text-xs font-medium hover:bg-danger/5"
+            @click="$emit('supprimer')"
+          >
+            Archiver
+          </button>
+        </template>
       </div>
     </td>
   </tr>

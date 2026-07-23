@@ -1,13 +1,16 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Parkini.Application.DTOs;
 using Parkini.Entities;
 using Parkini.Infrastructure.Data;
+using Parkini.Infrastructure.Security;
 
 namespace Parkini.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ParkingsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -18,7 +21,7 @@ public class ParkingsController : ControllerBase
     }
 
     // GET /api/parkings?page=1&pageSize=10&search=xxx
-    // Recherche par nom, code ou adresse (critere de consultation du ticket)
+    [HasPermission(Permissions.ParkingsRead)]
     [HttpGet]
     public async Task<ActionResult<ParkingListeResponseDto>> GetAll(
         [FromQuery] int page = 1,
@@ -54,7 +57,8 @@ public class ParkingsController : ControllerBase
         });
     }
 
-    // GET /api/parkings/5 (avec le detail des zones et le taux d'occupation)
+    // GET /api/parkings/5
+    [HasPermission(Permissions.ParkingsRead)]
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ParkingDto>> GetById(int id)
     {
@@ -69,7 +73,7 @@ public class ParkingsController : ControllerBase
     }
 
     // POST /api/parkings
-    // Regles : code unique, au moins une zone obligatoire
+    [HasPermission(Permissions.ParkingsWrite)]
     [HttpPost]
     public async Task<ActionResult<ParkingDto>> Create(CreateParkingDto dto)
     {
@@ -113,7 +117,8 @@ public class ParkingsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = parking.Id }, ToDto(parking, inclureZones: true));
     }
 
-    // PUT /api/parkings/5 (infos generales uniquement, pas les zones)
+    // PUT /api/parkings/5
+    [HasPermission(Permissions.ParkingsWrite)]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, UpdateParkingDto dto)
     {
@@ -139,13 +144,14 @@ public class ParkingsController : ControllerBase
         parking.HeureFermeture = dto.Ouvert24h24 ? null : dto.HeureFermeture;
         parking.ImageUrl = dto.ImageUrl;
         parking.Statut = ParseStatut(dto.Statut) ?? parking.Statut;
+        parking.DateDerniereModification = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
         return NoContent();
     }
 
-    // DELETE /api/parkings/5 (archivage/soft-delete + journalisation)
-    // Regle : impossible si le parking a des acces recents.
+    // DELETE /api/parkings/5 (archivage + journalisation)
+    [HasPermission(Permissions.ParkingsWrite)]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
@@ -169,7 +175,8 @@ public class ParkingsController : ControllerBase
         return NoContent();
     }
 
-    // GET /api/parkings/5/historique - consultation de la journalisation
+    // GET /api/parkings/5/historique
+    [HasPermission(Permissions.ParkingsRead)]
     [HttpGet("{id:int}/historique")]
     public async Task<ActionResult<IEnumerable<object>>> GetHistorique(int id)
     {
@@ -183,6 +190,7 @@ public class ParkingsController : ControllerBase
     }
 
     // POST /api/parkings/5/zones
+    [HasPermission(Permissions.ParkingsWrite)]
     [HttpPost("{parkingId:int}/zones")]
     public async Task<ActionResult<ZoneDto>> AjouterZone(int parkingId, CreateZoneDto dto)
     {
@@ -199,16 +207,18 @@ public class ParkingsController : ControllerBase
         };
 
         _context.Zones.Add(zone);
+        parking.DateDerniereModification = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
         return CreatedAtAction(nameof(GetById), new { id = parkingId }, ToZoneDto(zone));
     }
 
     // PUT /api/parkings/zones/5
+    [HasPermission(Permissions.ParkingsWrite)]
     [HttpPut("zones/{zoneId:int}")]
     public async Task<IActionResult> ModifierZone(int zoneId, CreateZoneDto dto)
     {
-        var zone = await _context.Zones.FindAsync(zoneId);
+        var zone = await _context.Zones.Include(z => z.Parking).FirstOrDefaultAsync(z => z.Id == zoneId);
         if (zone is null)
             return NotFound();
 
@@ -219,30 +229,38 @@ public class ParkingsController : ControllerBase
         zone.Type = dto.Type;
         zone.NombrePlaces = dto.NombrePlaces;
 
+        if (zone.Parking is not null)
+            zone.Parking.DateDerniereModification = DateTime.UtcNow;
+
         await _context.SaveChangesAsync();
         return NoContent();
     }
 
-    // PUT /api/parkings/zones/5/statut - activer/desactiver une zone
+    // PUT /api/parkings/zones/5/statut
+    [HasPermission(Permissions.ParkingsWrite)]
     [HttpPut("zones/{zoneId:int}/statut")]
     public async Task<ActionResult<ZoneDto>> ChangerStatutZone(int zoneId, [FromBody] bool estActive)
     {
-        var zone = await _context.Zones.FindAsync(zoneId);
+        var zone = await _context.Zones.Include(z => z.Parking).FirstOrDefaultAsync(z => z.Id == zoneId);
         if (zone is null)
             return NotFound();
 
         zone.EstActive = estActive;
+
+        if (zone.Parking is not null)
+            zone.Parking.DateDerniereModification = DateTime.UtcNow;
+
         await _context.SaveChangesAsync();
 
         return Ok(ToZoneDto(zone));
     }
 
     // DELETE /api/parkings/zones/5
-    // Regle : un parking doit toujours garder au moins une zone.
+    [HasPermission(Permissions.ParkingsWrite)]
     [HttpDelete("zones/{zoneId:int}")]
     public async Task<IActionResult> SupprimerZone(int zoneId)
     {
-        var zone = await _context.Zones.FindAsync(zoneId);
+        var zone = await _context.Zones.Include(z => z.Parking).FirstOrDefaultAsync(z => z.Id == zoneId);
         if (zone is null)
             return NotFound();
 
@@ -251,12 +269,16 @@ public class ParkingsController : ControllerBase
             return BadRequest("Impossible de supprimer la dernière zone : un parking doit avoir au moins une zone.");
 
         _context.Zones.Remove(zone);
+
+        if (zone.Parking is not null)
+            zone.Parking.DateDerniereModification = DateTime.UtcNow;
+
         await _context.SaveChangesAsync();
         return NoContent();
     }
 
     // PUT /api/parkings/zones/5/occupation
-    // Temporaire : sera pilote par le module Acces une fois construit.
+    [HasPermission(Permissions.ParkingsWrite)]
     [HttpPut("zones/{zoneId:int}/occupation")]
     public async Task<ActionResult<ZoneDto>> MettreAJourOccupation(int zoneId, UpdateOccupationZoneDto dto)
     {
@@ -276,7 +298,6 @@ public class ParkingsController : ControllerBase
     // ===== Aides internes =====
 
     // TODO : brancher sur la vraie table "Acces" une fois le module construit.
-    // Pour l'instant, ne bloque jamais la suppression (retourne toujours false).
     private Task<bool> AAccesRecents(int parkingId)
     {
         return Task.FromResult(false);
@@ -306,6 +327,7 @@ public class ParkingsController : ControllerBase
             NombreZones = p.Zones.Count,
             CapaciteMax = capaciteMax,
             PlacesOccupees = placesOccupees,
+            DateDerniereModification = p.DateDerniereModification,
             Zones = inclureZones ? p.Zones.Select(ToZoneDto).ToList() : new List<ZoneDto>()
         };
     }

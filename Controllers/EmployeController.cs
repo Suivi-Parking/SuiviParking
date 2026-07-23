@@ -1,14 +1,17 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Parkini.Application.DTOs;
 using Parkini.Entities;
 using Parkini.Infrastructure.Data;
-using SuiviParking.API.Models;
+using Parkini.Infrastructure.Security;
+
 
 namespace Parkini.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class EmployeController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -19,6 +22,7 @@ public class EmployeController : ControllerBase
     }
 
     // GET api/employe
+    [HasPermission(Permissions.EmployesRead)]
     [HttpGet]
     public async Task<ActionResult<EmployeListeResponseDto>> GetAll(
         [FromQuery] int page = 1,
@@ -47,6 +51,7 @@ public class EmployeController : ControllerBase
                 Fonction = e.Fonction,
                 Statut = e.Statut,
                 DateRattachement = e.DateRattachement,
+                DateDerniereModification = e.DateDerniereModification,
                 EntrepriseId = e.EntrepriseId,
                 Vehicules = e.Vehicules.Select(v => new VehiculeDto
                 {
@@ -57,7 +62,8 @@ public class EmployeController : ControllerBase
                     Couleur = v.Couleur,
                     Type = v.Type,
                     Statut = v.Statut,
-                    EmployeId = v.EmployeId
+                    EmployeId = v.EmployeId,
+                    DateDerniereModification = v.DateDerniereModification
                 }).ToList()
             })
             .ToListAsync();
@@ -72,6 +78,7 @@ public class EmployeController : ControllerBase
     }
 
     // GET api/employe/5
+    [HasPermission(Permissions.EmployesRead)]
     [HttpGet("{id}")]
     public async Task<ActionResult<EmployeDto>> GetById(int id)
     {
@@ -92,6 +99,7 @@ public class EmployeController : ControllerBase
             Fonction = e.Fonction,
             Statut = e.Statut,
             DateRattachement = e.DateRattachement,
+            DateDerniereModification = e.DateDerniereModification,
             EntrepriseId = e.EntrepriseId,
             Vehicules = e.Vehicules.Select(v => new VehiculeDto
             {
@@ -102,12 +110,14 @@ public class EmployeController : ControllerBase
                 Couleur = v.Couleur,
                 Type = v.Type,
                 Statut = v.Statut,
-                EmployeId = v.EmployeId
+                EmployeId = v.EmployeId,
+                DateDerniereModification = v.DateDerniereModification
             }).ToList()
         });
     }
 
     // POST api/employe
+    [HasPermission(Permissions.EmployesWrite)]
     [HttpPost]
     public async Task<ActionResult<EmployeDto>> Create(CreateEmployeDto dto)
     {
@@ -141,11 +151,13 @@ public class EmployeController : ControllerBase
                 Fonction = employe.Fonction,
                 Statut = employe.Statut,
                 DateRattachement = employe.DateRattachement,
+                DateDerniereModification = employe.DateDerniereModification,
                 EntrepriseId = employe.EntrepriseId
             });
     }
 
     // PUT api/employe/5
+    [HasPermission(Permissions.EmployesWrite)]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, UpdateEmployeDto dto)
     {
@@ -167,12 +179,14 @@ public class EmployeController : ControllerBase
         employe.Fonction = dto.Fonction;
         employe.Statut = dto.Statut;
         employe.EntrepriseId = dto.EntrepriseId;
+        employe.DateDerniereModification = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
         return NoContent();
     }
 
     // DELETE api/employe/5
+    [HasPermission(Permissions.EmployesWrite)]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
