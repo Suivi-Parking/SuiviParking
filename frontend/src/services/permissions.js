@@ -26,3 +26,4 @@ export const PERMISSIONS = {
     PAIEMENTS_READ: 'paiements.read',
     PAIEMENTS_WRITE: 'paiements.write',
 }
+

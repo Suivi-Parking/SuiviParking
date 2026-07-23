@@ -28,6 +28,7 @@ export const authStore = reactive({
         this.token = response.data.token
         this.email = response.data.email
         this.role = response.data.role
+        this.permissions = response.data.permissions || []
         localStorage.setItem('token', this.token)
         localStorage.setItem('email', this.email)
         localStorage.setItem('role', this.role)
