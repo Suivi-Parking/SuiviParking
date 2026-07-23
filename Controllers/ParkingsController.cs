@@ -15,7 +15,7 @@ public class ParkingsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
 
-    public EntreprisesController(ApplicationDbContext context)
+    public ParkingsController(ApplicationDbContext context)
     {
         _context = context;
     }
@@ -23,29 +23,22 @@ public class ParkingsController : ControllerBase
     // GET /api/parkings?page=1&pageSize=10&search=xxx
     [HasPermission(Permissions.ParkingsRead)]
     [HttpGet]
-    public async Task<ActionResult<EntrepriseListeResponseDto>> GetAll(
+    public async Task<ActionResult<ParkingListeResponseDto>> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
-        [FromQuery] string? search = null,
-        [FromQuery] string? statut = null) // "Actif" | "EnAttente" | "Expire"
+        [FromQuery] string? search = null)
     {
-        var query = _context.Entreprises
-            .Include(e => e.Abonnements)
-            // Employes volontairement non charge : la table n'existe pas encore.
-            // NombreEmployes restera a 0 jusqu'au ticket "gestion des employes".
-            .AsQueryable(); // le filtre soft-delete est global (voir DbContext)
+        var query = _context.Parkings.Include(p => p.Zones).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            query = query.Where(e =>
-                e.Nom.Contains(search) ||
-                e.MatriculeFiscal.Contains(search));
+            query = query.Where(p =>
+                p.Nom.Contains(search) ||
+                p.Code.Contains(search) ||
+                p.Adresse.Contains(search));
         }
 
-        // Le statut est calcule en memoire (pas directement traduisible en SQL simple).
-        // Suffisant pour le volume attendu sur ce projet ; a revoir via une colonne
-        // calculee ou une vue SQL si le nombre d'entreprises devient tres important.
-        var toutes = await query.ToListAsync();
+        var totalCount = await query.CountAsync();
 
         var parkings = await query
             .OrderBy(p => p.Nom)
@@ -94,48 +87,34 @@ public class ParkingsController : ControllerBase
         if (!dto.Ouvert24h24 && (dto.HeureOuverture is null || dto.HeureFermeture is null))
             return BadRequest("Les horaires d'ouverture/fermeture sont requis si le parking n'est pas ouvert 24h/24.");
 
-        var counts = new EntrepriseCountsDto
+        var parking = new Parking
         {
-            Tous = avecStatut.Count,
-            Actif = avecStatut.Count(x => x.Statut == "Actif"),
-            EnAttente = avecStatut.Count(x => x.Statut == "EnAttente"),
-            Expire = avecStatut.Count(x => x.Statut == "Expire")
+            Nom = dto.Nom,
+            Code = dto.Code,
+            Adresse = dto.Adresse,
+            Latitude = dto.Latitude,
+            Longitude = dto.Longitude,
+            Ouvert24h24 = dto.Ouvert24h24,
+            HeureOuverture = dto.Ouvert24h24 ? null : dto.HeureOuverture,
+            HeureFermeture = dto.Ouvert24h24 ? null : dto.HeureFermeture,
+            ImageUrl = dto.ImageUrl,
+            Statut = ParseStatut(dto.Statut) ?? StatutParking.Actif
         };
 
-        if (!string.IsNullOrWhiteSpace(statut))
+        foreach (var zoneDto in dto.Zones)
         {
-            avecStatut = avecStatut.Where(x => x.Statut == statut).ToList();
+            parking.Zones.Add(new Zone
+            {
+                Nom = zoneDto.Nom,
+                Type = zoneDto.Type,
+                NombrePlaces = zoneDto.NombrePlaces
+            });
         }
 
-        var totalCount = avecStatut.Count;
+        _context.Parkings.Add(parking);
+        await _context.SaveChangesAsync();
 
-        var items = avecStatut
-            .OrderBy(x => x.Entreprise.Nom)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(x => new EntrepriseDto
-            {
-                Id = x.Entreprise.Id,
-                Nom = x.Entreprise.Nom,
-                Adresse = x.Entreprise.Adresse,
-                Telephone = x.Entreprise.Telephone,
-                Email = x.Entreprise.Email,
-                MatriculeFiscal = x.Entreprise.MatriculeFiscal,
-                Secteur = x.Entreprise.Secteur,
-                DateCreation = x.Entreprise.DateCreation,
-                NombreEmployes = 0, // place-holder tant que le module Employes n'existe pas
-                StatutAbonnement = x.Statut
-            })
-            .ToList();
-
-        return Ok(new EntrepriseListeResponseDto
-        {
-            Items = items,
-            TotalCount = totalCount,
-            Page = page,
-            PageSize = pageSize,
-            Counts = counts
-        });
+        return CreatedAtAction(nameof(GetById), new { id = parking.Id }, ToDto(parking, inclureZones: true));
     }
 
     // PUT /api/parkings/5
@@ -143,17 +122,17 @@ public class ParkingsController : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, UpdateParkingDto dto)
     {
-        var dernierAbonnement = entreprise.Abonnements
-            .OrderByDescending(a => a.DateFin)
-            .FirstOrDefault();
+        var parking = await _context.Parkings.FindAsync(id);
+        if (parking is null)
+            return NotFound();
 
-        if (dernierAbonnement is null)
-            return "EnAttente"; // aucune souscription encore creee
+        var codeUtiliseParUnAutre = await _context.Parkings
+            .AnyAsync(p => p.Code == dto.Code && p.Id != id);
+        if (codeUtiliseParUnAutre)
+            return Conflict($"Le code parking '{dto.Code}' est deja utilise par un autre parking.");
 
-        if (dernierAbonnement.Statut == StatutAbonnement.Resilie ||
-            dernierAbonnement.Statut == StatutAbonnement.Expire ||
-            dernierAbonnement.DateFin < DateTime.UtcNow)
-            return "Expire";
+        if (!dto.Ouvert24h24 && (dto.HeureOuverture is null || dto.HeureFermeture is null))
+            return BadRequest("Les horaires d'ouverture/fermeture sont requis si le parking n'est pas ouvert 24h/24.");
 
         parking.Nom = dto.Nom;
         parking.Code = dto.Code;
@@ -167,7 +146,8 @@ public class ParkingsController : ControllerBase
         parking.Statut = ParseStatut(dto.Statut) ?? parking.Statut;
         parking.DateDerniereModification = DateTime.UtcNow;
 
-        return "Actif";
+        await _context.SaveChangesAsync();
+        return NoContent();
     }
 
     // DELETE /api/parkings/5 (archivage + journalisation)
@@ -175,26 +155,24 @@ public class ParkingsController : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var entreprise = await _context.Entreprises
-            .Include(e => e.Abonnements)
-            .FirstOrDefaultAsync(e => e.Id == id);
-
-        if (entreprise is null)
+        var parking = await _context.Parkings.FindAsync(id);
+        if (parking is null)
             return NotFound();
 
-        return Ok(new EntrepriseDto
+        if (await AAccesRecents(id))
+            return Conflict("Ce parking a des acces enregistres recemment : archivage impossible.");
+
+        parking.EstSupprime = true;
+
+        _context.HistoriqueParkings.Add(new HistoriqueParking
         {
-            Id = entreprise.Id,
-            Nom = entreprise.Nom,
-            Adresse = entreprise.Adresse,
-            Telephone = entreprise.Telephone,
-            Email = entreprise.Email,
-            MatriculeFiscal = entreprise.MatriculeFiscal,
-            Secteur = entreprise.Secteur,
-            DateCreation = entreprise.DateCreation,
-            NombreEmployes = 0, // place-holder tant que le module Employes n'existe pas
-            StatutAbonnement = CalculerStatutAbonnement(entreprise)
+            ParkingId = id,
+            Action = "Archivage",
+            Details = $"Parking '{parking.Nom}' (code {parking.Code}) archive."
         });
+
+        await _context.SaveChangesAsync();
+        return NoContent();
     }
 
     // GET /api/parkings/5/historique
@@ -202,11 +180,14 @@ public class ParkingsController : ControllerBase
     [HttpGet("{id:int}/historique")]
     public async Task<ActionResult<IEnumerable<object>>> GetHistorique(int id)
     {
-        var existeDeja = await _context.Entreprises
-            .AnyAsync(e => e.MatriculeFiscal == dto.MatriculeFiscal);
+        var historique = await _context.HistoriqueParkings
+            .Where(h => h.ParkingId == id)
+            .OrderByDescending(h => h.DateAction)
+            .Select(h => new { h.Id, h.Action, h.DateAction, h.Details })
+            .ToListAsync();
 
-        if (existeDeja)
-            return Conflict("Une entreprise avec ce matricule fiscal existe deja.");
+        return Ok(historique);
+    }
 
     // POST /api/parkings/5/zones
     [HasPermission(Permissions.ParkingsWrite)]
@@ -219,32 +200,17 @@ public class ParkingsController : ControllerBase
 
         var zone = new Zone
         {
+            ParkingId = parkingId,
             Nom = dto.Nom,
-            Adresse = dto.Adresse,
-            Telephone = dto.Telephone,
-            Email = dto.Email,
-            MatriculeFiscal = dto.MatriculeFiscal,
-            Secteur = dto.Secteur,
-            DateCreation = DateTime.UtcNow
+            Type = dto.Type,
+            NombrePlaces = dto.NombrePlaces
         };
 
         _context.Zones.Add(zone);
         parking.DateDerniereModification = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetById), new { id = entreprise.Id }, new EntrepriseDto
-        {
-            Id = entreprise.Id,
-            Nom = entreprise.Nom,
-            Adresse = entreprise.Adresse,
-            Telephone = entreprise.Telephone,
-            Email = entreprise.Email,
-            MatriculeFiscal = entreprise.MatriculeFiscal,
-            Secteur = entreprise.Secteur,
-            DateCreation = entreprise.DateCreation,
-            NombreEmployes = 0,
-            StatutAbonnement = "EnAttente"
-        });
+        return CreatedAtAction(nameof(GetById), new { id = parkingId }, ToZoneDto(zone));
     }
 
     // PUT /api/parkings/zones/5
@@ -256,12 +222,12 @@ public class ParkingsController : ControllerBase
         if (zone is null)
             return NotFound();
 
-        entreprise.Nom = dto.Nom;
-        entreprise.Adresse = dto.Adresse;
-        entreprise.Telephone = dto.Telephone;
-        entreprise.Email = dto.Email;
-        entreprise.MatriculeFiscal = dto.MatriculeFiscal;
-        entreprise.Secteur = dto.Secteur;
+        if (dto.NombrePlaces < zone.PlacesOccupees)
+            return BadRequest("Le nouveau nombre de places ne peut pas etre inferieur au nombre de places deja occupees.");
+
+        zone.Nom = dto.Nom;
+        zone.Type = dto.Type;
+        zone.NombrePlaces = dto.NombrePlaces;
 
         if (zone.Parking is not null)
             zone.Parking.DateDerniereModification = DateTime.UtcNow;
