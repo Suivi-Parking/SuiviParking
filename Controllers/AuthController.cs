@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Parkini.Application.DTOs;
 using Parkini.Infrastructure.Data;
 using Parkini.Infrastructure.Security;
+using Parkini.Entities;
 
 namespace Parkini.Controllers;
 
