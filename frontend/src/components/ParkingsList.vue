@@ -270,14 +270,7 @@
     }
 
     // ===== Pagination =====
-    const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize.value)))
-    const paged = computed(() => {
-        const start = (page.value - 1) * pageSize.value
-        return filtered.value.slice(start, start + pageSize.value)
-    })
-
-    function prevPage() { if (page.value > 1) page.value-- }
-    function nextPage() { if (page.value < totalPages.value) page.value++ }
+    const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / pageSize.value)))
 
     // ===== Événement global pour création depuis Header =====
     function handleCreateEvent() {
