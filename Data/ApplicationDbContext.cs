@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Parkini.Entities;
-using SuiviParking.API.Models;
 
 namespace Parkini.Infrastructure.Data;
 
@@ -12,6 +11,7 @@ public class ApplicationDbContext : DbContext
     }
 
     public DbSet<Entreprise> Entreprises => Set<Entreprise>();
+    public DbSet<Paiement> Paiements => Set<Paiement>();
     public DbSet<Abonnement> Abonnements => Set<Abonnement>();
     public DbSet<Parking> Parkings => Set<Parking>();
     public DbSet<Zone> Zones => Set<Zone>();
@@ -28,17 +28,12 @@ public class ApplicationDbContext : DbContext
         // ===== Soft-delete (archivage) =====
         modelBuilder.Entity<Entreprise>().HasQueryFilter(e => !e.EstSupprime);
         modelBuilder.Entity<Parking>().HasQueryFilter(p => !p.EstSupprime);
-
         // Si une entreprise est archivee, ses abonnements ne doivent plus apparaitre non plus
         modelBuilder.Entity<Abonnement>().HasQueryFilter(a => !a.Entreprise!.EstSupprime);
 
         // ===== Conversions enum -> string (colonnes VARCHAR en base) =====
         modelBuilder.Entity<Abonnement>()
             .Property(a => a.Statut)
-            .HasConversion<string>();
-
-        modelBuilder.Entity<Parking>()
-            .Property(p => p.Statut)
             .HasConversion<string>();
 
         // ===== Utilisateurs / Roles (travail du collegue) =====

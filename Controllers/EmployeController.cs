@@ -5,8 +5,6 @@ using Parkini.Application.DTOs;
 using Parkini.Entities;
 using Parkini.Infrastructure.Data;
 using Parkini.Infrastructure.Security;
-using SuiviParking.API.Models;
-
 namespace Parkini.Controllers;
 
 [ApiController]

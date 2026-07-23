@@ -1,7 +1,7 @@
 ﻿using Parkini.Entities;
 
-namespace SuiviParking.API.Models
-{
+namespace Parkini.Entities;
+
     public class Employe
     {
         public int Id { get; set; }
@@ -17,4 +17,3 @@ namespace SuiviParking.API.Models
         // Relation
         public ICollection<Vehicule> Vehicules { get; set; } = new List<Vehicule>();
     }
-}
