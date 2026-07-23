@@ -16,4 +16,13 @@ export const PERMISSIONS = {
 
     VEHICULES_READ: 'vehicules.read',
     VEHICULES_WRITE: 'vehicules.write',
+
+    ACCES_READ: 'acces.read',
+    ACCES_WRITE: 'acces.write',
+
+    NOTIFICATIONS_READ: 'notifications.read',
+    NOTIFICATIONS_WRITE: 'notifications.write',
+
+    PAIEMENTS_READ: 'paiments.read',
+    PAIEMENTS_WRITE: 'paiments.write',
 }

@@ -1,6 +1,4 @@
-﻿using Parkini.Entities;
-
-namespace SuiviParking.API.Models
+﻿namespace Parkini.Entities
 {
     public class Employe
     {
@@ -12,6 +10,7 @@ namespace SuiviParking.API.Models
         public string Fonction { get; set; } = string.Empty;
         public string Statut { get; set; } = "ACTIF";
         public DateTime DateRattachement { get; set; } = DateTime.UtcNow;
+        public DateTime DateDerniereModification { get; set; } = DateTime.UtcNow;
         public int EntrepriseId { get; set; }
 
         // Relation

@@ -12,12 +12,10 @@ public class EntrepriseDto
     public string MatriculeFiscal { get; set; } = string.Empty;
     public string Secteur { get; set; } = string.Empty;
     public DateTime DateCreation { get; set; }
+    public DateTime DateDerniereModification { get; set; }
     public int NombreEmployes { get; set; }
-
-    // Calcule a partir de l'abonnement le plus recent : "Actif" | "EnAttente" | "Expire"
     public string StatutAbonnement { get; set; } = "EnAttente";
 }
-
 public class CreateEntrepriseDto
 {
     [Required, MaxLength(150)]

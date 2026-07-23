@@ -1,13 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Parkini.Application.DTOs;
 using Parkini.Entities;
 using Parkini.Infrastructure.Data;
+using Parkini.Infrastructure.Security;
 
 namespace Parkini.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class AbonnementsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -18,6 +21,7 @@ public class AbonnementsController : ControllerBase
     }
 
     // GET /api/abonnements?entrepriseId=1&statut=Actif&page=1&pageSize=10
+    [HasPermission(Permissions.AbonnementsRead)]
     [HttpGet]
     public async Task<ActionResult<AbonnementListeResponseDto>> GetAll(
         [FromQuery] int? entrepriseId = null,
@@ -70,6 +74,7 @@ public class AbonnementsController : ControllerBase
     }
 
     // GET /api/abonnements/5
+    [HasPermission(Permissions.AbonnementsRead)]
     [HttpGet("{id:int}")]
     public async Task<ActionResult<AbonnementDto>> GetById(int id)
     {
@@ -85,6 +90,7 @@ public class AbonnementsController : ControllerBase
 
     // POST /api/abonnements
     // Regle metier : une entreprise ne peut pas avoir 2 abonnements actifs en meme temps.
+    [HasPermission(Permissions.AbonnementsWrite)]
     [HttpPost]
     public async Task<ActionResult<AbonnementDto>> Create(CreateAbonnementDto dto)
     {
@@ -126,6 +132,7 @@ public class AbonnementsController : ControllerBase
 
     // POST /api/abonnements/5/renouveler
     // Autorise uniquement si le statut effectif actuel est "Expire".
+    [HasPermission(Permissions.AbonnementsWrite)]
     [HttpPost("{id:int}/renouveler")]
     public async Task<ActionResult<AbonnementDto>> Renouveler(int id, RenouvelerAbonnementDto dto)
     {
@@ -143,7 +150,7 @@ public class AbonnementsController : ControllerBase
             return BadRequest("La nouvelle date de fin doit etre dans le futur.");
 
         abonnement.DateDebut = DateTime.UtcNow;
-        abonnement.DateFin = dto.NouvelleDateFin;
+        abonnement.DateFin = dto.NouvelleDateFin.ToUniversalTime();
         abonnement.Statut = StatutAbonnement.Actif;
         abonnement.Raison = null;
 
@@ -153,6 +160,7 @@ public class AbonnementsController : ControllerBase
     }
 
     // POST /api/abonnements/5/suspendre
+    [HasPermission(Permissions.AbonnementsWrite)]
     [HttpPost("{id:int}/suspendre")]
     public async Task<ActionResult<AbonnementDto>> Suspendre(int id, ChangerStatutAbonnementDto dto)
     {
@@ -176,6 +184,7 @@ public class AbonnementsController : ControllerBase
     }
 
     // POST /api/abonnements/5/resilier
+    [HasPermission(Permissions.AbonnementsWrite)]
     [HttpPost("{id:int}/resilier")]
     public async Task<ActionResult<AbonnementDto>> Resilier(int id, ChangerStatutAbonnementDto dto)
     {
