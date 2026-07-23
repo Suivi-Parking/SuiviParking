@@ -11,11 +11,10 @@ namespace Parkini.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class EntreprisesController : ControllerBase
+public class ParkingsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
-
-    public EntreprisesController(ApplicationDbContext context)
+    public ParkingsController(ApplicationDbContext context)
     {
         _context = context;
     }
