@@ -19,6 +19,7 @@
                 <EmployesList v-else-if="active === 'employes'" />
                 <VehiculesList v-else-if="active === 'vehicules'" />
                 <PaiementsList v-else-if="active === 'paiements'" />
+                <DashboardHome v-else-if="active === 'dashboard'" />
                 <ModulePlaceholder v-else :titre="titreModuleActif" />
             </main>
         </div>
@@ -37,6 +38,7 @@ import ParkingsList from './components/ParkingsList.vue'
 import EmployesList from './components/EmployesList.vue'
 import VehiculesList from './components/VehiculesList.vue'
 import ModulePlaceholder from './components/ModulePlaceholder.vue'
+import DashboardHome from './components/DashboardHome.vue'
 
 const active = ref('entreprises')
 
