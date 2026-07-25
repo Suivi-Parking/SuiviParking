@@ -198,6 +198,7 @@ public class EntreprisesController : ControllerBase
         entreprise.Email = dto.Email;
         entreprise.MatriculeFiscal = dto.MatriculeFiscal;
         entreprise.Secteur = dto.Secteur;
+        entreprise.DateDerniereModification = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
         return NoContent();

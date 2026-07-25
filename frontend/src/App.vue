@@ -5,12 +5,7 @@
     <div v-else class="flex min-h-screen bg-bg">
         <Sidebar :active="active" @navigate="active = $event" />
         <div class="flex-1 flex flex-col">
-            <div class="flex justify-end items-center p-2 bg-panel border-b border-slate-200">
-                <span class="text-sm text-slate-500 mr-3">{{ authStore.email }} ({{ authStore.role }})</span>
-                <button @click="authStore.logout()" class="text-sm text-danger hover:underline">
-                    Se déconnecter
-                </button>
-            </div>
+            
             <Header :view="active" />
             <main class="flex-1">
                 <EntreprisesList v-if="active === 'entreprises'" />
@@ -18,9 +13,9 @@
                 <ParkingsList v-else-if="active === 'Parking'" />
                 <EmployesList v-else-if="active === 'employes'" />
                 <VehiculesList v-else-if="active === 'vehicules'" />
-                <PaiementsList v-else-if="active === 'paiements'" />
                 <DashboardHome v-else-if="active === 'dashboard'" />
-                <ModulePlaceholder v-else :titre="titreModuleActif" />
+                <AccesList v-else-if="active === 'acces'" />
+                <NotificationsList v-else-if="active === 'notifications'" />                <ModulePlaceholder v-else :titre="titreModuleActif" />
             </main>
         </div>
     </div>
@@ -37,10 +32,11 @@ import PaiementsList from './components/PaiementsList.vue'
 import ParkingsList from './components/ParkingsList.vue'
 import EmployesList from './components/EmployesList.vue'
 import VehiculesList from './components/VehiculesList.vue'
+import AccesList from './components/AccesList.vue'
+import NotificationsList from './components/NotificationsList.vue'
 import ModulePlaceholder from './components/ModulePlaceholder.vue'
 import DashboardHome from './components/DashboardHome.vue'
-
-const active = ref('entreprises')
+const active = ref('dashboard')
 
 const labels = {
   dashboard: 'Tableau de bord',

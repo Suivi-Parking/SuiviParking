@@ -1,4 +1,4 @@
-﻿namespace Parkini.Entities;
+namespace Parkini.Entities;
 
 public class Vehicule
 {
@@ -9,6 +9,7 @@ public class Vehicule
     public string Couleur { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
     public string Statut { get; set; } = "ACTIF";
+    public DateTime DateDerniereModification { get; set; } = DateTime.UtcNow;
     public int EmployeId { get; set; }
     public Employe? Employe { get; set; }
 }

@@ -5,6 +5,7 @@ using Parkini.Application.DTOs;
 using Parkini.Entities;
 using Parkini.Infrastructure.Data;
 using Parkini.Infrastructure.Security;
+
 namespace Parkini.Controllers;
 
 [ApiController]
@@ -49,6 +50,7 @@ public class EmployeController : ControllerBase
                 Fonction = e.Fonction,
                 Statut = e.Statut,
                 DateRattachement = e.DateRattachement,
+                DateDerniereModification = e.DateDerniereModification,
                 EntrepriseId = e.EntrepriseId,
                 Vehicules = e.Vehicules.Select(v => new VehiculeDto
                 {
@@ -59,7 +61,8 @@ public class EmployeController : ControllerBase
                     Couleur = v.Couleur,
                     Type = v.Type,
                     Statut = v.Statut,
-                    EmployeId = v.EmployeId
+                    EmployeId = v.EmployeId,
+                    DateDerniereModification = v.DateDerniereModification
                 }).ToList()
             })
             .ToListAsync();
@@ -95,6 +98,7 @@ public class EmployeController : ControllerBase
             Fonction = e.Fonction,
             Statut = e.Statut,
             DateRattachement = e.DateRattachement,
+            DateDerniereModification = e.DateDerniereModification,
             EntrepriseId = e.EntrepriseId,
             Vehicules = e.Vehicules.Select(v => new VehiculeDto
             {
@@ -105,7 +109,8 @@ public class EmployeController : ControllerBase
                 Couleur = v.Couleur,
                 Type = v.Type,
                 Statut = v.Statut,
-                EmployeId = v.EmployeId
+                EmployeId = v.EmployeId,
+                DateDerniereModification = v.DateDerniereModification
             }).ToList()
         });
     }
@@ -145,6 +150,7 @@ public class EmployeController : ControllerBase
                 Fonction = employe.Fonction,
                 Statut = employe.Statut,
                 DateRattachement = employe.DateRattachement,
+                DateDerniereModification = employe.DateDerniereModification,
                 EntrepriseId = employe.EntrepriseId
             });
     }
@@ -172,6 +178,7 @@ public class EmployeController : ControllerBase
         employe.Fonction = dto.Fonction;
         employe.Statut = dto.Statut;
         employe.EntrepriseId = dto.EntrepriseId;
+        employe.DateDerniereModification = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
         return NoContent();

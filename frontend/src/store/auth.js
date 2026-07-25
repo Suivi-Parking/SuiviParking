@@ -32,6 +32,12 @@ export const authStore = reactive({
         localStorage.setItem('token', this.token)
         localStorage.setItem('email', this.email)
         localStorage.setItem('role', this.role)
+
+        // Le login ne renvoie PAS les permissions (voir LoginResponse cote backend) :
+        // il faut les recuperer separement via GET /Auth/permissions, une fois le
+        // token deja stocke ci-dessus (l'intercepteur axios en a besoin pour l'envoyer).
+        const permsResponse = await api.get('/Auth/permissions')
+        this.permissions = permsResponse.data.permissions || []
         localStorage.setItem('permissions', JSON.stringify(this.permissions))
     },
 

@@ -1,13 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Parkini.Application.DTOs;
 using Parkini.Entities;
 using Parkini.Infrastructure.Data;
+using Parkini.Infrastructure.Security;
 
 namespace Parkini.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class PaiementsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -21,6 +24,7 @@ public class PaiementsController : ControllerBase
     }
 
     // GET /api/paiements?entrepriseId=1&abonnementId=2&statut=EnRetard&page=1&pageSize=10
+    [HasPermission(Permissions.PaiementsRead)]
     [HttpGet]
     public async Task<ActionResult<PaiementListeResponseDto>> GetAll(
         [FromQuery] int? entrepriseId = null,
@@ -77,6 +81,7 @@ public class PaiementsController : ControllerBase
     }
 
     // GET /api/paiements/5
+    [HasPermission(Permissions.PaiementsRead)]
     [HttpGet("{id:int}")]
     public async Task<ActionResult<PaiementDto>> GetById(int id)
     {
@@ -92,6 +97,7 @@ public class PaiementsController : ControllerBase
 
     // GET /api/paiements/echeances
     // Prochaines echeances non payees, triees par urgence.
+    [HasPermission(Permissions.PaiementsRead)]
     [HttpGet("echeances")]
     public async Task<ActionResult<List<PaiementDto>>> GetEcheances()
     {
@@ -109,6 +115,7 @@ public class PaiementsController : ControllerBase
     }
 
     // GET /api/paiements/indicateurs?entrepriseId=1
+    [HasPermission(Permissions.PaiementsRead)]
     [HttpGet("indicateurs")]
     public async Task<ActionResult<IndicateursFinanciersDto>> GetIndicateurs([FromQuery] int? entrepriseId = null)
     {
@@ -143,6 +150,7 @@ public class PaiementsController : ControllerBase
 
     // POST /api/paiements
     // Cree une echeance de paiement (statut EnAttente par defaut).
+    [HasPermission(Permissions.PaiementsWrite)]
     [HttpPost]
     public async Task<ActionResult<PaiementDto>> Create(CreatePaiementDto dto)
     {
@@ -174,6 +182,7 @@ public class PaiementsController : ControllerBase
     }
 
     // POST /api/paiements/5/marquer-paye
+    [HasPermission(Permissions.PaiementsWrite)]
     [HttpPost("{id:int}/marquer-paye")]
     public async Task<ActionResult<PaiementDto>> MarquerPaye(int id, MarquerPayeDto dto)
     {
@@ -201,6 +210,7 @@ public class PaiementsController : ControllerBase
     }
 
     // POST /api/paiements/5/rejeter
+    [HasPermission(Permissions.PaiementsWrite)]
     [HttpPost("{id:int}/rejeter")]
     public async Task<ActionResult<PaiementDto>> Rejeter(int id, RejeterPaiementDto dto)
     {
@@ -221,6 +231,7 @@ public class PaiementsController : ControllerBase
     // POST /api/paiements/verifier-retards?joursAvantSuspension=15
     // Detecte les echeances en retard et suspend automatiquement les abonnements
     // dont un paiement est en retard depuis plus de N jours.
+    [HasPermission(Permissions.PaiementsWrite)]
     [HttpPost("verifier-retards")]
     public async Task<ActionResult<object>> VerifierRetards([FromQuery] int joursAvantSuspension = JoursAvantSuspensionParDefaut)
     {
