@@ -15,6 +15,7 @@ public class EmployeDto
     public string Fonction { get; set; } = string.Empty;
     public string Statut { get; set; } = string.Empty;
     public DateTime DateRattachement { get; set; }
+    public DateTime DateDerniereModification { get; set; }
     public int EntrepriseId { get; set; }
     public List<VehiculeDto> Vehicules { get; set; } = new();
 }

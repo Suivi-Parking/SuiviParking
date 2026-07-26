@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
+// https://vitejs.dev/config/
 export default defineConfig({
     plugins: [vue()],
 
@@ -11,7 +12,12 @@ export default defineConfig({
         proxy: {
             '/api': {
                 target: 'http://localhost:5104',
+                // HTTPS directement (pas HTTP) : evite le 307 UseHttpsRedirection()
+                // du backend, qui faisait perdre le header Authorization lors de la
+                // redirection cross-port (HTTP:5226 -> HTTPS:7080).
+                //target: 'https://localhost:7080',
                 changeOrigin: true,
+                secure: false, // accepte le certificat auto-signe du backend en dev
             }
         }
     }

@@ -5,6 +5,9 @@ using System.Text;
 
 using Parkini.Infrastructure.Data;
 using Parkini.Infrastructure.Security;
+using Hangfire;
+using Hangfire.PostgreSql;
+using Parkini.Infrastructure.Notifications;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,9 +17,10 @@ AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 
 // Database PostgreSQL
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection"))
+    options.UseNpgsql(connectionString)
         .UseSnakeCaseNamingConvention());
 
 
@@ -50,7 +54,20 @@ builder.Services.AddScoped<JwtService>();
 
 
 
+
 // CORS Vue.js
+// ===== Notifications / Rappels =====
+builder.Services.AddScoped<IEmailSender, MailKitEmailSender>();
+builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<RappelsJobs>();
+
+if (!string.IsNullOrEmpty(connectionString))
+{
+    builder.Services.AddHangfire(config => config
+        .UsePostgreSqlStorage(connectionString));
+    builder.Services.AddHangfireServer();
+}
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("LocalDev", policy =>
@@ -98,5 +115,30 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+
+// ===== Hangfire : dashboard + jobs recurrents =====
+if (!string.IsNullOrEmpty(connectionString))
+{
+    app.UseHangfireDashboard("/hangfire"); // optionnel : interface web pour voir les jobs
+
+    RecurringJob.AddOrUpdate<RappelsJobs>(
+        "verifier-renouvellements-abonnements",
+        job => job.VerifierRenouvellementsAbonnements(),
+        "0 6 * * *");
+
+    RecurringJob.AddOrUpdate<RappelsJobs>(
+        "verifier-saturation-parkings",
+        job => job.VerifierSaturationParkings(),
+        "0 6 * * *");
+    RecurringJob.AddOrUpdate<RappelsJobs>(
+        "verifier-echeances-paiements",
+        job => job.VerifierEcheancesPaiements(),
+        "0 6 * * *");
+    RecurringJob.AddOrUpdate<RappelsJobs>(
+        "verifier-mise-a-jour-infos",
+        job => job.VerifierMiseAJourInfos(),
+        "0 6 * * *");
+
+}
 
 app.Run();

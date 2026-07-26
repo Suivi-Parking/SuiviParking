@@ -15,6 +15,7 @@ public class VehiculeDto
     public string Statut { get; set; } = string.Empty;
     public int EmployeId { get; set; }
     public string EmployeNom { get; set; } = string.Empty;
+    public DateTime DateDerniereModification { get; set; }
 }
 
 // DTO pour créer un véhicule

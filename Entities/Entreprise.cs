@@ -10,6 +10,7 @@ public class Entreprise
     public string MatriculeFiscal { get; set; } = string.Empty;
     public string Secteur { get; set; } = string.Empty; // ex: Automobile, Finance, Energie...
     public DateTime DateCreation { get; set; } = DateTime.UtcNow;
+    public DateTime DateDerniereModification { get; set; } = DateTime.UtcNow;
 
     // Soft-delete : on ne supprime jamais vraiment la ligne en base
     public bool EstSupprime { get; set; } = false;

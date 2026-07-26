@@ -26,6 +26,7 @@ public class Parking
     public string? ImageUrl { get; set; }
 
     public StatutParking Statut { get; set; } = StatutParking.Actif;
+    public DateTime DateDerniereModification { get; set; } = DateTime.UtcNow;
 
     // Soft-delete = archivage. Distinct de Statut (Actif/Inactif), qui est un etat
     // metier, alors qu'EstSupprime signifie "n'existe plus du tout" pour l'appli.

@@ -19,7 +19,7 @@ public class AccesDto
     public int? AbonnementId { get; set; }
     public string? DureeFormatee { get; set; }
 }
- 
+
 // DTO pour demander un accès (entrée)
 public class DemandeAccesDto
 {

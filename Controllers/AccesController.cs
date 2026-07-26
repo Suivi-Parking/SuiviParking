@@ -1,26 +1,38 @@
+
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Parkini.Infrastructure.Data;
-using Parkini.Application.DTOs; 
+using Parkini.Application.DTOs;
 using Parkini.Entities;
+using Parkini.Infrastructure.Notifications;
+using Parkini.Infrastructure.Security;
 
 namespace Parkini.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class AccesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly NotificationService _notificationService;
+        private readonly IConfiguration _config;
 
-        public AccesController(ApplicationDbContext context)
+        public AccesController(
+            ApplicationDbContext context,
+            NotificationService notificationService,
+            IConfiguration config)
         {
             _context = context;
+            _notificationService = notificationService;
+            _config = config;
+
         }
 
-        // =========================================================
         // POST api/acces/entree
         // Autorise (ou refuse) l'entrée d'un véhicule dans un parking
-        // =========================================================
+
         [HttpPost("entree")]
         public async Task<ActionResult<AccesDto>> AutoriserEntree(DemandeAccesDto dto)
         {
@@ -82,6 +94,21 @@ namespace Parkini.Controllers
             _context.Acces.Add(acces);
             await _context.SaveChangesAsync();
 
+            // ===== Notification "accès refusé" (acces.Id existe désormais) =====
+            if (!estAutorise)
+            {
+                var emailAdmin = _config["Rappels:EmailAdministrateur"] ?? "admin@parkini.tn";
+
+                await _notificationService.CreerEtEnvoyerAsync(
+                    TypeNotification.AccesRefuse,
+                    emailAdmin,
+                    $"Tentative d'accès refusée - Véhicule {vehicule.Immatriculation}",
+                    $"Le véhicule {vehicule.Immatriculation} (employé : {vehicule.Employe?.Nom}) " +
+                    $"s'est vu refuser l'accès au parking {parking.Nom}.<br/>Motif : {motifRefus}",
+                    accesId: acces.Id
+                );
+            }
+
             var resultDto = MapToDto(acces, vehicule);
 
             if (!estAutorise)
@@ -90,10 +117,9 @@ namespace Parkini.Controllers
             return CreatedAtAction(nameof(GetById), new { id = acces.Id }, resultDto);
         }
 
-        // =========================================================
         // POST api/acces/sortie
         // Enregistre la sortie d'un véhicule
-        // =========================================================
+
         [HttpPost("sortie")]
         public async Task<ActionResult<AccesDto>> EnregistrerSortie(SortieAccesDto dto)
         {
@@ -116,10 +142,9 @@ namespace Parkini.Controllers
             return Ok(MapToDto(acces, acces.Vehicule));
         }
 
-        // =========================================================
         // GET api/acces/verifier-abonnement/{abonnementId}
         // Vérifie la validité d'un abonnement
-        // =========================================================
+
         [HttpGet("verifier-abonnement/{abonnementId:int}")]
         public async Task<ActionResult<bool>> VerifierValiditeAbonnement(int abonnementId)
         {
@@ -143,9 +168,8 @@ namespace Parkini.Controllers
             return statutActif && dateValide;
         }
 
-        // =========================================================
         // GET api/acces  (historique paginé, avec filtres optionnels)
-        // =========================================================
+
         [HttpGet]
         public async Task<ActionResult<AccesListeResponseDto>> GetHistorique(
             [FromQuery] int page = 1,
@@ -196,9 +220,10 @@ namespace Parkini.Controllers
             return Ok(response);
         }
 
-        // =========================================================
+         
         // GET api/acces/{id}
-        // =========================================================
+        
+
         [HttpGet("{id:int}")]
         public async Task<ActionResult<AccesDto>> GetById(int id)
         {
@@ -213,9 +238,7 @@ namespace Parkini.Controllers
             return Ok(MapToDto(acces, acces.Vehicule));
         }
 
-        // =========================================================
         // Mapping Entity -> DTO
-        // =========================================================
         private static AccesDto MapToDto(Acces acces, Vehicule? vehicule)
         {
             var duree = acces.CalculerDuree();

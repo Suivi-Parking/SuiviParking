@@ -1,4 +1,7 @@
 <script setup>
+    import { authStore } from '../store/auth'
+    import { PERMISSIONS } from '../services/permissions'
+
     defineProps({
         abonnement: { type: Object, required: true }
     })
@@ -49,7 +52,7 @@
             <div v-if="abonnement.raison" class="text-xs text-gray-400 mt-1">{{ abonnement.raison }}</div>
         </td>
         <td class="p-3">
-            <div class="flex gap-2">
+            <div class="flex gap-2" v-if="authStore.can(PERMISSIONS.ABONNEMENTS_WRITE)">
                 <button v-if="abonnement.statut === 'Expire'"
                         class="px-3 py-1.5 rounded-lg border text-xs font-medium hover:bg-gray-50"
                         @click="$emit('renouveler', abonnement)">
@@ -67,6 +70,7 @@
                 </button>
                 <span v-if="abonnement.statut === 'Resilie'" class="text-gray-300 text-xs">—</span>
             </div>
+            <span v-else class="text-gray-300 text-xs">—</span>
         </td>
     </tr>
 </template>
