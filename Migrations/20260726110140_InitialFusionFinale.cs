@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace parkini.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialFusion : Migration
+    public partial class InitialFusionFinale : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -25,6 +25,7 @@ namespace parkini.Migrations
                     matricule_fiscal = table.Column<string>(type: "text", nullable: false),
                     secteur = table.Column<string>(type: "text", nullable: false),
                     date_creation = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    date_derniere_modification = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     est_supprime = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
@@ -48,6 +49,7 @@ namespace parkini.Migrations
                     heure_fermeture = table.Column<TimeOnly>(type: "time without time zone", nullable: true),
                     image_url = table.Column<string>(type: "text", nullable: true),
                     statut = table.Column<int>(type: "integer", nullable: false),
+                    date_derniere_modification = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     est_supprime = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
@@ -81,6 +83,7 @@ namespace parkini.Migrations
                     fonction = table.Column<string>(type: "text", nullable: false),
                     statut = table.Column<string>(type: "text", nullable: false),
                     date_rattachement = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    date_derniere_modification = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     entreprise_id = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -209,6 +212,7 @@ namespace parkini.Migrations
                     couleur = table.Column<string>(type: "text", nullable: false),
                     type = table.Column<string>(type: "text", nullable: false),
                     statut = table.Column<string>(type: "text", nullable: false),
+                    date_derniere_modification = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     employe_id = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -248,6 +252,110 @@ namespace parkini.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "acces",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    date_heure_entree = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    date_heure_sortie = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    est_autorise = table.Column<bool>(type: "boolean", nullable: false),
+                    motif_refus = table.Column<string>(type: "text", nullable: true),
+                    statut = table.Column<string>(type: "text", nullable: false),
+                    vehicule_id = table.Column<int>(type: "integer", nullable: false),
+                    parking_id = table.Column<int>(type: "integer", nullable: false),
+                    abonnement_id = table.Column<int>(type: "integer", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_acces", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_acces_abonnements_abonnement_id",
+                        column: x => x.abonnement_id,
+                        principalTable: "abonnements",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "fk_acces_parkings_parking_id",
+                        column: x => x.parking_id,
+                        principalTable: "parkings",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_acces_vehicules_vehicule_id",
+                        column: x => x.vehicule_id,
+                        principalTable: "vehicules",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "notifications",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    type = table.Column<string>(type: "text", nullable: false),
+                    canal = table.Column<string>(type: "text", nullable: false),
+                    statut = table.Column<string>(type: "text", nullable: false),
+                    destinataire = table.Column<string>(type: "text", nullable: false),
+                    sujet = table.Column<string>(type: "text", nullable: false),
+                    message = table.Column<string>(type: "text", nullable: false),
+                    entreprise_id = table.Column<int>(type: "integer", nullable: true),
+                    abonnement_id = table.Column<int>(type: "integer", nullable: true),
+                    parking_id = table.Column<int>(type: "integer", nullable: true),
+                    acces_id = table.Column<int>(type: "integer", nullable: true),
+                    paiement_id = table.Column<int>(type: "integer", nullable: true),
+                    employe_id = table.Column<int>(type: "integer", nullable: true),
+                    vehicule_id = table.Column<int>(type: "integer", nullable: true),
+                    date_creation = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    date_envoi = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    erreur_detail = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_notifications", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_notifications_abonnements_abonnement_id",
+                        column: x => x.abonnement_id,
+                        principalTable: "abonnements",
+                        principalColumn: "id");
+                    table.ForeignKey(
+                        name: "fk_notifications_acces_acces_id",
+                        column: x => x.acces_id,
+                        principalTable: "acces",
+                        principalColumn: "id");
+                    table.ForeignKey(
+                        name: "fk_notifications_employes_employe_id",
+                        column: x => x.employe_id,
+                        principalTable: "employes",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "fk_notifications_entreprises_entreprise_id",
+                        column: x => x.entreprise_id,
+                        principalTable: "entreprises",
+                        principalColumn: "id");
+                    table.ForeignKey(
+                        name: "fk_notifications_paiements_paiement_id",
+                        column: x => x.paiement_id,
+                        principalTable: "paiements",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "fk_notifications_parkings_parking_id",
+                        column: x => x.parking_id,
+                        principalTable: "parkings",
+                        principalColumn: "id");
+                    table.ForeignKey(
+                        name: "fk_notifications_vehicules_vehicule_id",
+                        column: x => x.vehicule_id,
+                        principalTable: "vehicules",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.SetNull);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "ix_abonnements_entreprise_id",
                 table: "abonnements",
@@ -257,6 +365,21 @@ namespace parkini.Migrations
                 name: "ix_abonnements_parking_id",
                 table: "abonnements",
                 column: "parking_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_acces_abonnement_id",
+                table: "acces",
+                column: "abonnement_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_acces_parking_id",
+                table: "acces",
+                column: "parking_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_acces_vehicule_id",
+                table: "acces",
+                column: "vehicule_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_employes_email",
@@ -273,6 +396,41 @@ namespace parkini.Migrations
                 name: "ix_historique_parkings_parking_id",
                 table: "historique_parkings",
                 column: "parking_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_notifications_abonnement_id",
+                table: "notifications",
+                column: "abonnement_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_notifications_acces_id",
+                table: "notifications",
+                column: "acces_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_notifications_employe_id",
+                table: "notifications",
+                column: "employe_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_notifications_entreprise_id",
+                table: "notifications",
+                column: "entreprise_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_notifications_paiement_id",
+                table: "notifications",
+                column: "paiement_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_notifications_parking_id",
+                table: "notifications",
+                column: "parking_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_notifications_vehicule_id",
+                table: "notifications",
+                column: "vehicule_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_paiements_abonnement_id",
@@ -314,22 +472,28 @@ namespace parkini.Migrations
                 name: "historique_parkings");
 
             migrationBuilder.DropTable(
-                name: "paiements");
+                name: "notifications");
 
             migrationBuilder.DropTable(
                 name: "utilisateurs");
 
             migrationBuilder.DropTable(
-                name: "vehicules");
-
-            migrationBuilder.DropTable(
                 name: "zones");
 
             migrationBuilder.DropTable(
-                name: "abonnements");
+                name: "acces");
+
+            migrationBuilder.DropTable(
+                name: "paiements");
 
             migrationBuilder.DropTable(
                 name: "roles");
+
+            migrationBuilder.DropTable(
+                name: "vehicules");
+
+            migrationBuilder.DropTable(
+                name: "abonnements");
 
             migrationBuilder.DropTable(
                 name: "employes");

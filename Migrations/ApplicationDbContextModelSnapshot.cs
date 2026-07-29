@@ -2,7 +2,6 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Parkini.Infrastructure.Data;
@@ -12,11 +11,9 @@ using Parkini.Infrastructure.Data;
 namespace parkini.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260722154250_AjoutPaiementIdNotification")]
-    partial class AjoutPaiementIdNotification
+    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -146,6 +143,10 @@ namespace parkini.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime>("DateDerniereModification")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date_derniere_modification");
+
                     b.Property<DateTime>("DateRattachement")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_rattachement");
@@ -214,6 +215,10 @@ namespace parkini.Migrations
                     b.Property<DateTime>("DateCreation")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_creation");
+
+                    b.Property<DateTime>("DateDerniereModification")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date_derniere_modification");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -320,6 +325,10 @@ namespace parkini.Migrations
                         .HasColumnType("text")
                         .HasColumnName("destinataire");
 
+                    b.Property<int?>("EmployeId")
+                        .HasColumnType("integer")
+                        .HasColumnName("employe_id");
+
                     b.Property<int?>("EntrepriseId")
                         .HasColumnType("integer")
                         .HasColumnName("entreprise_id");
@@ -356,6 +365,10 @@ namespace parkini.Migrations
                         .HasColumnType("text")
                         .HasColumnName("type");
 
+                    b.Property<int?>("VehiculeId")
+                        .HasColumnType("integer")
+                        .HasColumnName("vehicule_id");
+
                     b.HasKey("Id")
                         .HasName("pk_notifications");
 
@@ -365,6 +378,9 @@ namespace parkini.Migrations
                     b.HasIndex("AccesId")
                         .HasDatabaseName("ix_notifications_acces_id");
 
+                    b.HasIndex("EmployeId")
+                        .HasDatabaseName("ix_notifications_employe_id");
+
                     b.HasIndex("EntrepriseId")
                         .HasDatabaseName("ix_notifications_entreprise_id");
 
@@ -373,6 +389,9 @@ namespace parkini.Migrations
 
                     b.HasIndex("ParkingId")
                         .HasDatabaseName("ix_notifications_parking_id");
+
+                    b.HasIndex("VehiculeId")
+                        .HasDatabaseName("ix_notifications_vehicule_id");
 
                     b.ToTable("notifications", (string)null);
                 });
@@ -447,6 +466,10 @@ namespace parkini.Migrations
                         .HasColumnType("text")
                         .HasColumnName("code");
 
+                    b.Property<DateTime>("DateDerniereModification")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date_derniere_modification");
+
                     b.Property<bool>("EstSupprime")
                         .HasColumnType("boolean")
                         .HasColumnName("est_supprime");
@@ -480,9 +503,8 @@ namespace parkini.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("ouvert24h24");
 
-                    b.Property<string>("Statut")
-                        .IsRequired()
-                        .HasColumnType("text")
+                    b.Property<int>("Statut")
+                        .HasColumnType("integer")
                         .HasColumnName("statut");
 
                     b.HasKey("Id")
@@ -578,6 +600,10 @@ namespace parkini.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("couleur");
+
+                    b.Property<DateTime>("DateDerniereModification")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date_derniere_modification");
 
                     b.Property<int>("EmployeId")
                         .HasColumnType("integer")
@@ -749,6 +775,12 @@ namespace parkini.Migrations
                         .HasForeignKey("AccesId")
                         .HasConstraintName("fk_notifications_acces_acces_id");
 
+                    b.HasOne("Parkini.Entities.Employe", "Employe")
+                        .WithMany()
+                        .HasForeignKey("EmployeId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_notifications_employes_employe_id");
+
                     b.HasOne("Parkini.Entities.Entreprise", "Entreprise")
                         .WithMany()
                         .HasForeignKey("EntrepriseId")
@@ -765,15 +797,25 @@ namespace parkini.Migrations
                         .HasForeignKey("ParkingId")
                         .HasConstraintName("fk_notifications_parkings_parking_id");
 
+                    b.HasOne("Parkini.Entities.Vehicule", "Vehicule")
+                        .WithMany()
+                        .HasForeignKey("VehiculeId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_notifications_vehicules_vehicule_id");
+
                     b.Navigation("Abonnement");
 
                     b.Navigation("Acces");
+
+                    b.Navigation("Employe");
 
                     b.Navigation("Entreprise");
 
                     b.Navigation("Paiement");
 
                     b.Navigation("Parking");
+
+                    b.Navigation("Vehicule");
                 });
 
             modelBuilder.Entity("Parkini.Entities.Paiement", b =>
