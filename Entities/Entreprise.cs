@@ -1,4 +1,4 @@
-﻿namespace Parkini.Entities;
+namespace Parkini.Entities;
 
 public class Entreprise
 {

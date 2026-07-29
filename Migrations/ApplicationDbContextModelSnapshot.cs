@@ -503,9 +503,8 @@ namespace parkini.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("ouvert24h24");
 
-                    b.Property<string>("Statut")
-                        .IsRequired()
-                        .HasColumnType("text")
+                    b.Property<int>("Statut")
+                        .HasColumnType("integer")
                         .HasColumnName("statut");
 
                     b.HasKey("Id")
