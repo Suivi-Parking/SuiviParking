@@ -27,6 +27,7 @@
         employes: 'Employés',
         vehicules: 'Véhicules',
         paiements: 'Paiements & échéances',
+        revenus: 'Revenus',
         notifications: 'Notifications',
         Parking: 'Parkings',
         acces: 'Accès',

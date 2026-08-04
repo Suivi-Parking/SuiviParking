@@ -70,18 +70,3 @@ public class AbonnementListeResponseDto
     public int TotalPages => (int)Math.Ceiling(TotalCount / (double)PageSize);
     public AbonnementCountsDto Counts { get; set; } = new();
 }
-
-public class StatistiquesMensuellesDto
-{
-    public int Mois { get; set; } // 1-12
-    public string NomMois { get; set; } = string.Empty;
-    public int Nouveaux { get; set; }
-    public int Actifs { get; set; }
-    public int Resiliations { get; set; }
-}
-
-public class StatistiquesAnnuellesDto
-{
-    public int Annee { get; set; }
-    public List<StatistiquesMensuellesDto> Mois { get; set; } = new();
-}

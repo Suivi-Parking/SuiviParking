@@ -25,10 +25,4 @@ public class Abonnement
 
     // Renseignee lors d'une suspension ou d'une resiliation
     public string? Raison { get; set; }
-
-    // Renseignee uniquement lors d'une resiliation (jamais pour une suspension).
-    // Necessaire pour reconstituer un historique mensuel fiable ("Resiliations
-    // par mois") sans se baser sur DateFin, qui peut differer de la date reelle
-    // de resiliation.
-    public DateTime? DateResiliation { get; set; }
 }
