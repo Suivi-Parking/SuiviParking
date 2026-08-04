@@ -201,55 +201,10 @@ public class AbonnementsController : ControllerBase
 
         abonnement.Statut = StatutAbonnement.Resilie;
         abonnement.Raison = dto.Raison;
-        abonnement.DateResiliation = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
 
         return Ok(ToDto(abonnement, CalculerStatutEffectif(abonnement)));
-    }
-
-    // GET /api/abonnements/statistiques?annee=2026
-    // Critere du ticket : graphique 12 mois, 3 metriques (Nouveaux/Actifs/Resiliations),
-    // filtrage par annee.
-    [HasPermission(Permissions.AbonnementsRead)]
-    [HttpGet("statistiques")]
-    public async Task<ActionResult<StatistiquesAnnuellesDto>> GetStatistiques([FromQuery] int? annee = null)
-    {
-        var anneeCible = annee ?? DateTime.UtcNow.Year;
-
-        var tous = await _context.Abonnements.ToListAsync();
-
-        var noms = new[] { "Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc" };
-        var moisStats = new List<StatistiquesMensuellesDto>();
-
-        for (int m = 1; m <= 12; m++)
-        {
-            var debutMois = new DateTime(anneeCible, m, 1, 0, 0, 0, DateTimeKind.Utc);
-            var finMois = debutMois.AddMonths(1).AddTicks(-1);
-
-            var nouveaux = tous.Count(a =>
-                a.DateDebut.Year == anneeCible && a.DateDebut.Month == m);
-
-            var actifs = tous.Count(a =>
-                a.DateDebut <= finMois && a.DateFin >= debutMois &&
-                (a.DateResiliation == null || a.DateResiliation > finMois));
-
-            var resiliations = tous.Count(a =>
-                a.DateResiliation.HasValue &&
-                a.DateResiliation.Value.Year == anneeCible &&
-                a.DateResiliation.Value.Month == m);
-
-            moisStats.Add(new StatistiquesMensuellesDto
-            {
-                Mois = m,
-                NomMois = noms[m - 1],
-                Nouveaux = nouveaux,
-                Actifs = actifs,
-                Resiliations = resiliations
-            });
-        }
-
-        return Ok(new StatistiquesAnnuellesDto { Annee = anneeCible, Mois = moisStats });
     }
 
     // Le statut "effectif" tient compte de la date de fin sans avoir besoin

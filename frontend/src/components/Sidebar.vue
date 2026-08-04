@@ -81,6 +81,7 @@
                 { key: 'vehicules', label: 'Véhicules', icon: icons.car },
                 { key: 'Parking', label: 'Parking', icon: icons.car },
                 { key: 'paiements', label: 'Paiements', icon: icons.euro },
+                { key: 'revenus', label: 'Revenus', icon: icons.euro },
                 { key: 'entreprises', label: 'Entreprises clientes', icon: icons.building },
                 { key: 'abonnements', label: 'Abonnements', icon: icons.card },
                 { key: 'acces', label: 'Accès', icon: icons.card },

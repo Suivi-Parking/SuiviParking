@@ -25,5 +25,8 @@ export const PERMISSIONS = {
 
     PAIEMENTS_READ: 'paiements.read',
     PAIEMENTS_WRITE: 'paiements.write',
+
+    // Tableau de bord / Revenus (lecture seule : agrège Paiements + Abonnements + Entreprises)
+    DASHBOARD_READ: 'dashboard.read',
 }
 
