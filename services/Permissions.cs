@@ -39,6 +39,9 @@ public static class Permissions
     public const string PaiementsRead = "paiements.read";
     public const string PaiementsWrite = "paiements.write";
 
+    // Tableau de bord (lecture seule : agrège les autres modules, pas d'écriture dédiée)
+    public const string DashboardRead = "dashboard.read";
+
     /// <summary>Toutes les permissions existantes dans le système.</summary>
     public static readonly IReadOnlyList<string> All = new[]
     {
@@ -51,5 +54,6 @@ public static class Permissions
         AccesRead, AccesWrite,
         NotificationsRead, NotificationsWrite,
         PaiementsRead, PaiementsWrite,
+        DashboardRead,
     };
 }
