@@ -66,6 +66,7 @@
         card: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`,
         invoice: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>`,
         euro: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 7a6 6 0 1 0 0 10"/><line x1="3" y1="10" x2="14" y2="10"/><line x1="3" y1="14" x2="12" y2="14"/></svg>`,
+        occupation: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg>`,
         bell: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`
     }
 
@@ -80,7 +81,9 @@
                 { key: 'employes', label: 'Employés', icon: icons.users },
                 { key: 'vehicules', label: 'Véhicules', icon: icons.car },
                 { key: 'Parking', label: 'Parking', icon: icons.car },
+                
                 { key: 'paiements', label: 'Paiements', icon: icons.euro },
+                { key: 'occupation', label: 'Occupation', icon: icons.occupation },
                 { key: 'entreprises', label: 'Entreprises clientes', icon: icons.building },
                 { key: 'abonnements', label: 'Abonnements', icon: icons.card },
                 { key: 'acces', label: 'Accès', icon: icons.card },

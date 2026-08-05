@@ -40,7 +40,7 @@
         employes: PERMISSIONS.EMPLOYES_WRITE,
         vehicules: PERMISSIONS.VEHICULES_WRITE,
         Parking: PERMISSIONS.PARKINGS_WRITE,
-        paiements: PERMISSIONS.PAIEMENTS_WRITE, // <-- AJOUT
+        
     }
 
     const showCreate = computed(() => {
