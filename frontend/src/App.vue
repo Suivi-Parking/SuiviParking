@@ -8,10 +8,21 @@
 
         <div class="flex-1 flex flex-col">
             <!-- Plus de barre de déconnexion en haut -->
+            <div class="w-full flex justify-end items-center gap-4 px-4 py-2 bg-panel border-b border-slate-200">
+                <span class="text-sm text-slate-500 whitespace-nowrap truncate max-w-[280px]">
+                    {{ authStore.email }} ({{ authStore.role }})
+                </span>
+                <button
+                    @click="authStore.logout()"
+                    class="text-sm text-danger hover:underline whitespace-nowrap flex-shrink-0"
+                >
+                    Se déconnecter
+                </button>
+            </div>
             <Header :view="active" />
 
             <main class="flex-1">
-                <Dashboard v-if="active === 'dashboard'" />
+               
                 <EntreprisesList v-if="active === 'entreprises'" />
                 <AbonnementsList v-else-if="active === 'abonnements'" />
                 <ParkingsList v-else-if="active === 'Parking'" />
@@ -20,6 +31,7 @@
                 <PaiementsList v-else-if="active === 'paiements'" />
                 <AccesList v-else-if="active === 'acces'" />
                 <NotificationsList v-else-if="active === 'notifications'" />
+                <DashboardHome v-else-if="active === 'dashboard'" />
                 <ModulePlaceholder v-else :titre="titreModuleActif" />
             </main>
         </div>
@@ -43,12 +55,17 @@
     import AccesList from './components/AccesList.vue'
     import NotificationsList from './components/NotificationsList.vue'
 
+    import DashboardHome from './components/DashboardHome.vue'
+    import ModulePlaceholder from './components/ModulePlaceholder.vue'
+
     const active = ref('dashboard')
 
     const labels = {
         dashboard: 'Tableau de bord',
-        utilisateurs: 'Utilisateurs'
-       
+        utilisateurs: 'Utilisateurs',
+
+        facturation: 'Facturation'
+
     }
 
     const titreModuleActif = computed(() => labels[active.value] ?? active.value)
