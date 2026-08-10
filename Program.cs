@@ -129,7 +129,7 @@ if (!string.IsNullOrEmpty(connectionString))
     RecurringJob.AddOrUpdate<RappelsJobs>(
         "verifier-saturation-parkings",
         job => job.VerifierSaturationParkings(),
-        "0 6 * * *");
+        "0 6 * * *");  
     RecurringJob.AddOrUpdate<RappelsJobs>(
         "verifier-echeances-paiements",
         job => job.VerifierEcheancesPaiements(),

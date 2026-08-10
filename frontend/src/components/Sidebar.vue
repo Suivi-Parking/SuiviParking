@@ -3,8 +3,11 @@
         <!-- Logo -->
         <div class="logo-area">
             <img src="../assets/images/logo.png" alt="ParkLine" />
-            <span>ParkLine</span>
+            
         </div>
+
+
+
 
         <!-- Navigation -->
         <nav class="nav-menu">
@@ -81,7 +84,9 @@
                 { key: 'Parking', label: 'Parkings', icon: icons.car },
                 { key: 'acces', label: 'Accès', icon: icons.lock },
                 { key: 'paiements', label: 'Paiements', icon: icons.euro },
-                { key: 'notifications', label: 'Notifications', icon: icons.bell }
+                { key: 'notifications', label: 'Notifications', icon: icons.bell },
+
+                
             ]
         }
     ]
@@ -114,10 +119,10 @@
         flex-shrink: 0;
     }
     .logo-area img {
-        width: 48px;
-        height: auto;
-        filter: drop-shadow(0 2px 4px rgba(16,106,215,0.1));
-    }
+    width: 150px;
+    height: auto;
+    filter: drop-shadow(0 2px 4px rgba(16,106,215,0.1));
+}
     .logo-area span {
         font-size: 1.4rem;
         font-weight: 700;
@@ -147,21 +152,21 @@
         padding: 0;
         margin: 0;
     }
-    .nav-item {
-        display: flex;
-        align-items: center;
-        gap: 0.7rem;
-        width: 100%;
-        padding: 0.6rem 0.8rem;
-        border-radius: 10px;
-        background: transparent;
-        border: none;
-        color: #2c405a;
-        font-size: 0.9rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
+   .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    border-radius: 10px;
+    background: transparent;
+    border: none;
+    color: #2c405a;
+    font-size: 1.05rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
     .nav-item:hover {
         background: rgba(255, 255, 255, 0.5);
         color: #106ad7;

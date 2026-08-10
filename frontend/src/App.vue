@@ -11,6 +11,7 @@
             <Header :view="active" />
 
             <main class="flex-1">
+                <Dashboard v-if="active === 'dashboard'" />
                 <EntreprisesList v-if="active === 'entreprises'" />
                 <AbonnementsList v-else-if="active === 'abonnements'" />
                 <ParkingsList v-else-if="active === 'Parking'" />
@@ -32,7 +33,7 @@
     import Sidebar from './components/Sidebar.vue'
     import Header from './components/Header.vue'
     import Login from './components/Login.vue'
-
+    import Dashboard from './components/Dashboard.vue'
     import EntreprisesList from './components/EntreprisesList.vue'
     import AbonnementsList from './components/AbonnementsList.vue'
     import PaiementsList from './components/PaiementsList.vue'
@@ -41,14 +42,13 @@
     import VehiculesList from './components/VehiculesList.vue'
     import AccesList from './components/AccesList.vue'
     import NotificationsList from './components/NotificationsList.vue'
-    import ModulePlaceholder from './components/ModulePlaceholder.vue'
 
     const active = ref('dashboard')
 
     const labels = {
         dashboard: 'Tableau de bord',
-        utilisateurs: 'Utilisateurs',
-        facturation: 'Facturation'
+        utilisateurs: 'Utilisateurs'
+       
     }
 
     const titreModuleActif = computed(() => labels[active.value] ?? active.value)
