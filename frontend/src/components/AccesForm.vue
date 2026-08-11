@@ -23,28 +23,69 @@
             <form @submit.prevent="soumettre" class="form-body">
                 <!-- Champs pour l'entrée -->
                 <template v-if="mode === 'entree'">
-                    <div class="field">
-                        <label>Véhicule (ID)</label>
-                        <input v-model.number="formEntree.vehiculeId"
-                               type="number"
+                    <div class="field" style="position:relative">
+                        <label>Véhicule (matricule)</label>
+                        <input v-model="vehiculeSearch"
+                               type="text"
+                               autocomplete="off"
                                required
-                               min="1"
-                               placeholder="ID du véhicule" />
+                               placeholder="Rechercher par immatriculation..."
+                               @focus="isVehiculeListOpen = true"
+                               @input="handleVehiculeInput"
+                               @blur="delayedClose(isVehiculeListOpen)" />
+                        <ul v-if="isVehiculeListOpen && vehiculesFiltres.length" class="combo-list">
+                            <li v-for="v in vehiculesFiltres" :key="v.id"
+                                @mousedown.prevent="selectVehicule(v)"
+                                :class="{ selected: formEntree.vehiculeId === v.id }">
+                                <strong>{{ v.immatriculation }}</strong> — {{ v.marque }} {{ v.modele }}
+                            </li>
+                        </ul>
+                        <div v-else-if="isVehiculeListOpen && vehiculeSearch && !vehiculesFiltres.length" class="combo-empty">
+                            Aucun véhicule actif trouvé.
+                        </div>
                     </div>
-                    <div class="field">
-                        <label>Parking (ID)</label>
-                        <input v-model.number="formEntree.parkingId"
-                               type="number"
+
+                    <div class="field" style="position:relative">
+                        <label>Parking (code)</label>
+                        <input v-model="parkingSearch"
+                               type="text"
+                               autocomplete="off"
                                required
-                               min="1"
-                               placeholder="ID du parking" />
+                               placeholder="Rechercher par code ou nom..."
+                               @focus="isParkingListOpen = true"
+                               @input="handleParkingInput"
+                               @blur="delayedClose(isParkingListOpen)" />
+                        <ul v-if="isParkingListOpen && parkingsFiltres.length" class="combo-list">
+                            <li v-for="p in parkingsFiltres" :key="p.id"
+                                @mousedown.prevent="selectParking(p)"
+                                :class="{ selected: formEntree.parkingId === p.id }">
+                                <strong>{{ p.code }}</strong> — {{ p.nom }}
+                            </li>
+                        </ul>
+                        <div v-else-if="isParkingListOpen && parkingSearch && !parkingsFiltres.length" class="combo-empty">
+                            Aucun parking actif trouvé.
+                        </div>
                     </div>
-                    <div class="field">
-                        <label>Abonnement (ID) <span class="optional">optionnel</span></label>
-                        <input v-model.number="formEntree.abonnementId"
-                               type="number"
-                               min="1"
-                               placeholder="ID de l'abonnement" />
+
+                    <div class="field" style="position:relative">
+                        <label>Abonnement <span class="optional">optionnel</span></label>
+                        <input v-model="abonnementSearch"
+                               type="text"
+                               autocomplete="off"
+                               placeholder="Rechercher par entreprise, type, parking..."
+                               @focus="isAbonnementListOpen = true"
+                               @input="handleAbonnementInput"
+                               @blur="delayedClose(isAbonnementListOpen)" />
+                        <ul v-if="isAbonnementListOpen && abonnementsFiltres.length" class="combo-list">
+                            <li v-for="a in abonnementsFiltres" :key="a.id"
+                                @mousedown.prevent="selectAbonnement(a)"
+                                :class="{ selected: formEntree.abonnementId === a.id }">
+                                {{ labelAbonnement(a) }}
+                            </li>
+                        </ul>
+                        <div v-else-if="isAbonnementListOpen && abonnementSearch && !abonnementsFiltres.length" class="combo-empty">
+                            Aucun abonnement actif trouvé.
+                        </div>
                     </div>
                 </template>
 
@@ -74,7 +115,8 @@
 </template>
 
 <script setup>
-    import { ref, reactive } from 'vue'
+    import { ref, reactive, computed, onMounted } from 'vue'
+    import api from '../services/api'
 
     const emit = defineEmits(['acces-cree', 'acces-modifie'])
 
@@ -90,6 +132,136 @@
     })
     const formSortie = reactive({
         accesId: null,
+    })
+
+    // ===== Sélecteur Véhicule (recherche par immatriculation) =====
+    const vehicules = ref([])
+    const vehiculeSearch = ref('')
+    const isVehiculeListOpen = ref(false)
+
+    const vehiculesFiltres = computed(() => {
+        const q = vehiculeSearch.value.trim().toLowerCase()
+        if (!q) return vehicules.value
+        return vehicules.value.filter(v =>
+            (v.immatriculation || '').toLowerCase().includes(q) ||
+            (v.marque || '').toLowerCase().includes(q) ||
+            (v.modele || '').toLowerCase().includes(q)
+        )
+    })
+
+    function selectVehicule(v) {
+        formEntree.vehiculeId = v.id
+        vehiculeSearch.value = `${v.immatriculation} — ${v.marque} ${v.modele}`.trim()
+        isVehiculeListOpen.value = false
+    }
+
+    // Si le champ est vidé/modifié apres une selection, on invalide l'ID retenu
+    // pour eviter d'envoyer un vehiculeId qui ne correspond plus au texte affiche.
+    function handleVehiculeInput() {
+        isVehiculeListOpen.value = true
+        formEntree.vehiculeId = null
+    }
+
+    // ===== Sélecteur Parking (recherche par code) =====
+    const parkings = ref([])
+    const parkingSearch = ref('')
+    const isParkingListOpen = ref(false)
+
+    const parkingsFiltres = computed(() => {
+        const q = parkingSearch.value.trim().toLowerCase()
+        if (!q) return parkings.value
+        return parkings.value.filter(p =>
+            (p.code || '').toLowerCase().includes(q) ||
+            (p.nom || '').toLowerCase().includes(q)
+        )
+    })
+
+    function selectParking(p) {
+        formEntree.parkingId = p.id
+        parkingSearch.value = `${p.code} — ${p.nom}`
+        isParkingListOpen.value = false
+    }
+
+    function handleParkingInput() {
+        isParkingListOpen.value = true
+        formEntree.parkingId = null
+    }
+
+    // ===== Sélecteur Abonnement (recherche par entreprise / type / parking, optionnel) =====
+    const abonnements = ref([])
+    const abonnementSearch = ref('')
+    const isAbonnementListOpen = ref(false)
+
+    const abonnementsFiltres = computed(() => {
+        const q = abonnementSearch.value.trim().toLowerCase()
+        if (!q) return abonnements.value
+        return abonnements.value.filter(a =>
+            (a.entrepriseNom || '').toLowerCase().includes(q) ||
+            (a.typeAbonnement || '').toLowerCase().includes(q) ||
+            (a.parkingNom || '').toLowerCase().includes(q)
+        )
+    })
+
+    function labelAbonnement(a) {
+        const parking = a.parkingNom ? ` · ${a.parkingNom}` : ''
+        return `${a.entrepriseNom} — ${a.typeAbonnement}${parking}`
+    }
+
+    function selectAbonnement(a) {
+        formEntree.abonnementId = a.id
+        abonnementSearch.value = labelAbonnement(a)
+        isAbonnementListOpen.value = false
+    }
+
+    function handleAbonnementInput() {
+        isAbonnementListOpen.value = true
+        formEntree.abonnementId = null
+    }
+
+    // Delai avant fermeture pour laisser le @mousedown.prevent d'un <li> s'executer
+    // avant que le blur du champ ne referme la liste.
+    function delayedClose(openRef) {
+        setTimeout(() => { openRef.value = false }, 150)
+    }
+
+    function resetSelecteurs() {
+        vehiculeSearch.value = ''
+        parkingSearch.value = ''
+        abonnementSearch.value = ''
+    }
+
+    onMounted(async () => {
+        try {
+            // Attention : le controleur backend s'appelle "VehiculeController" (singulier),
+            // donc la route reelle est /api/Vehicule, pas /api/Vehicules.
+            const response = await api.get('/Vehicule', { params: { pageSize: 1000 } })
+            const tousVehicules = response.data.items || response.data || []
+            // Comparaison insensible a la casse : la colonne Statut est un string libre
+            // (pas un enum), et les donnees reelles semblent stockees en "Actif"
+            // plutot qu'en "ACTIF" (valeur par defaut de l'entite Vehicule).
+            vehicules.value = tousVehicules.filter(v => (v.statut || '').toUpperCase() === 'ACTIF')
+        } catch (e) {
+            console.error('Echec du chargement des vehicules', e)
+            vehicules.value = []
+        }
+
+        try {
+            const response = await api.get('/Parkings', { params: { pageSize: 1000 } })
+            const tousParkings = response.data.items || response.data || []
+            parkings.value = tousParkings.filter(p => (p.statut || '').toLowerCase() === 'actif' && !p.estSupprime)
+        } catch (e) {
+            console.error('Echec du chargement des parkings', e)
+            parkings.value = []
+        }
+
+        try {
+            const response = await api.get('/Abonnements', { params: { pageSize: 1000 } })
+            const tousAbonnements = response.data.items || response.data || []
+            abonnements.value = tousAbonnements.filter(a => (a.statut || '').toLowerCase() === 'actif')
+        } catch (e) {
+            console.error('Echec du chargement des abonnements', e)
+            abonnements.value = []
+        }
     })
 
     async function soumettre() {
@@ -115,6 +287,7 @@
                 formEntree.vehiculeId = null
                 formEntree.parkingId = null
                 formEntree.abonnementId = null
+                resetSelecteurs()
             } else {
                 const reponse = await fetch('/api/acces/sortie', {
                     method: 'POST',
@@ -245,6 +418,50 @@
             box-shadow: 0 0 0 4px rgba(16, 106, 215, 0.1);
             background: #fff;
         }
+
+    /* Liste déroulante des sélecteurs avec recherche (véhicule / parking / abonnement) */
+    .combo-list {
+        position: absolute;
+        z-index: 70;
+        top: 100%;
+        left: 0;
+        right: 0;
+        margin-top: 4px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        max-height: 200px;
+        overflow-y: auto;
+        list-style: none;
+        padding: 4px 0;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    }
+
+        .combo-list li {
+            padding: 0.5rem 0.9rem;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+            .combo-list li:hover,
+            .combo-list li.selected {
+                background: #eff6ff;
+            }
+
+    .combo-empty {
+        position: absolute;
+        z-index: 70;
+        top: 100%;
+        left: 0;
+        right: 0;
+        margin-top: 4px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.5rem 0.9rem;
+        font-size: 0.8rem;
+        color: #94a3b8;
+    }
 
     /* Messages */
     .message {

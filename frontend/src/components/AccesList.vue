@@ -66,6 +66,7 @@
 
 <script setup>
     import { ref, reactive, onMounted } from 'vue'
+    import api from '../services/api'
     import AccesForm from './AccesForm.vue'
     import AccesRow from './AccesRow.vue'
 
@@ -155,16 +156,11 @@
         page.value = nouvellePage
 
         try {
-            const params = new URLSearchParams({
-                page: String(page.value),
-                pageSize: String(pageSize.value),
-            })
-            if (filtres.statut) params.append('statut', filtres.statut)
+            const params = { page: page.value, pageSize: pageSize.value }
+            if (filtres.statut) params.statut = filtres.statut
 
-            const reponse = await fetch(`/api/acces?${params.toString()}`)
-            if (!reponse.ok) throw new Error('Erreur de chargement.')
-
-            const data = await reponse.json()
+            const reponse = await api.get('/Acces', { params })
+            const data = reponse.data
             items.value = data.items
             totalPages.value = data.totalPages
             // Mise à jour des compteurs (si fournis par l'API)
@@ -174,11 +170,12 @@
                 counts.SORTI = data.counts.SORTI || 0
                 counts.REFUSE = data.counts.REFUSE || 0
             } else {
-                // Sinon on calcule à partir des items (si tous chargés)
-                // Mais comme on est paginé, on laisse les compteurs par défaut (0)
+                // AccesController.GetHistorique ne renvoie pas de compteurs par statut
+                // pour l'instant (contrairement a PaiementsController par exemple) :
+                // les badges resteront a 0 tant que ce n'est pas ajoute cote backend.
             }
         } catch (e) {
-            console.warn('⚠️ Backend injoignable, utilisation des données fictives')
+            console.warn('⚠️ Backend injoignable, utilisation des données fictives', e)
             // Filtrer les données fictives selon le filtre
             let filtered = MOCK_DATA
             if (filtres.statut) {
@@ -200,15 +197,10 @@
     // === Enregistrer une sortie ===
     async function enregistrerSortie(accesId) {
         try {
-            const reponse = await fetch('/api/acces/sortie', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ accesId }),
-            })
-            if (!reponse.ok) throw new Error("Impossible d'enregistrer la sortie.")
+            await api.post('/Acces/sortie', { accesId })
             await rafraichir()
         } catch (e) {
-            erreur.value = e.message
+            erreur.value = e?.response?.data?.message || e?.response?.data || "Impossible d'enregistrer la sortie."
         }
     }
 
