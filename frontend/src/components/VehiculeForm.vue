@@ -40,9 +40,26 @@
                         </select>
                         <span v-if="errors.type" class="error-msg">{{ errors.type }}</span>
                     </div>
-                    <div class="field">
-                        <label>Employé ID *</label>
-                        <input v-model.number="form.employeId" type="number" placeholder="1" :class="{ error: errors.employeId }" />
+                    <div class="field span-2" style="position:relative">
+                        <label>Employé *</label>
+                        <input v-model="employeSearch"
+                               type="text"
+                               autocomplete="off"
+                               placeholder="Rechercher par nom ou fonction..."
+                               :class="{ error: errors.employeId }"
+                               @focus="isEmployeListOpen = true"
+                               @input="handleEmployeInput"
+                               @blur="delayedClose" />
+                        <ul v-if="isEmployeListOpen && employesFiltres.length" class="combo-list">
+                            <li v-for="e in employesFiltres" :key="e.id"
+                                @mousedown.prevent="selectEmploye(e)"
+                                :class="{ selected: form.employeId === e.id }">
+                                <strong>{{ e.nom }} {{ e.prenom }}</strong> — {{ e.fonction }}
+                            </li>
+                        </ul>
+                        <div v-else-if="isEmployeListOpen && employeSearch && !employesFiltres.length" class="combo-empty">
+                            Aucun employé actif trouvé.
+                        </div>
                         <span v-if="errors.employeId" class="error-msg">{{ errors.employeId }}</span>
                     </div>
                     <div class="field" v-if="mode === 'edit'">
@@ -64,7 +81,8 @@
 </template>
 
 <script setup>
-    import { ref, watch } from 'vue'
+    import { ref, watch, computed, onMounted } from 'vue'
+    import api from '../services/api'
 
     const props = defineProps({
         mode: { type: String, default: 'create' },
@@ -83,6 +101,53 @@
         statut: 'ACTIF'
     })
 
+    // ===== Sélecteur Employé (recherche par nom / fonction, au lieu de l'ID brut) =====
+    const employes = ref([])
+    const employeSearch = ref('')
+    const isEmployeListOpen = ref(false)
+
+    const employesFiltres = computed(() => {
+        const q = employeSearch.value.trim().toLowerCase()
+        if (!q) return employes.value
+        return employes.value.filter(e =>
+            `${e.nom} ${e.prenom}`.toLowerCase().includes(q) ||
+            (e.fonction || '').toLowerCase().includes(q)
+        )
+    })
+
+    function labelEmploye(e) {
+        return `${e.nom} ${e.prenom} — ${e.fonction}`
+    }
+
+    function selectEmploye(e) {
+        form.value.employeId = e.id
+        employeSearch.value = labelEmploye(e)
+        isEmployeListOpen.value = false
+    }
+
+    // Si le texte change sans re-selection, on invalide l'ID retenu pour eviter
+    // d'envoyer un employeId qui ne correspond plus au texte affiche.
+    function handleEmployeInput() {
+        isEmployeListOpen.value = true
+        form.value.employeId = null
+    }
+
+    function delayedClose() {
+        setTimeout(() => { isEmployeListOpen.value = false }, 150)
+    }
+
+    onMounted(async () => {
+        try {
+            // Controleur "EmployeController" (singulier) => route /api/Employe
+            const response = await api.get('/Employe', { params: { pageSize: 1000 } })
+            const tousEmployes = response.data.items || response.data || []
+            employes.value = tousEmployes.filter(e => (e.statut || '').toUpperCase() === 'ACTIF')
+        } catch (e) {
+            console.error('Echec du chargement des employés', e)
+            employes.value = []
+        }
+    })
+
     watch(() => props.vehicule, (val) => {
         if (val) {
             form.value = {
@@ -95,11 +160,13 @@
                 employeId: val.employeId,
                 statut: val.statut
             }
+            employeSearch.value = val.employeNom ? val.employeNom : ''
         } else {
             form.value = {
                 immatriculation: '', marque: '', modele: '',
-                couleur: '', type: '', employeId: 1, statut: 'ACTIF'
+                couleur: '', type: '', employeId: null, statut: 'ACTIF'
             }
+            employeSearch.value = ''
         }
         errors.value = {}
     }, { immediate: true })

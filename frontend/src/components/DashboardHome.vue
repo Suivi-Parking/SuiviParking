@@ -1,6 +1,8 @@
 <script setup>
     import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
     import api from '../services/api'
+    import Chart from 'chart.js/auto'
+    // npm install chart.js  (requis par les tickets "graphiques Chart.js")
 
     /* ============================================================
        ===================  Tableau de bord  =======================
@@ -49,6 +51,14 @@
         return 'bg-emerald-50 text-emerald-600'
     }
 
+    // Couleur du point selon Notification.Type (enum reel : RenouvellementAbonnement,
+    // RappelPaiement, AccesRefuse, SaturationParking, MiseAJourInfos)
+    function notificationDotClass(type) {
+        if (type === 'SaturationParking' || type === 'AccesRefuse') return 'bg-red-500'
+        if (type === 'RappelPaiement') return 'bg-amber-500'
+        return 'bg-primary'
+    }
+
     onMounted(() => {
         fetchDashboard()
         intervalId = setInterval(fetchDashboard, 15000)
@@ -56,7 +66,102 @@
 
     onUnmounted(() => {
         clearInterval(intervalId)
+        parkingChart?.destroy()
+        repartitionChart?.destroy()
+        revenusChart?.destroy()
     })
+
+    // Redessine les graphiques Chart.js des qu'un nouveau payload dashboard arrive.
+    // flush: 'post' est indispensable ici : sans ca, le watcher s'execute AVANT
+    // que Vue ait mis a jour le DOM (le v-else-if="data" qui fait apparaitre les
+    // <canvas>), donc les refs (parkingCanvasRef, etc.) sont encore null et
+    // Chart.js ne dessine rien.
+    watch(data, () => {
+        dessinerGraphiqueOccupation()
+        dessinerGraphiqueRepartition()
+        dessinerGraphiqueRevenus()
+    }, { flush: 'post' })
+
+    /* ============================================================
+       ===============  Occupation par parking (Chart.js)  ==========
+       ============================================================ */
+    const parkingCanvasRef = ref(null)
+    let parkingChart = null
+
+    function couleurStatut(statut) {
+        if (statut === 'rouge') return '#D64545'
+        if (statut === 'jaune') return '#E0A32E'
+        return '#2E9E5B'
+    }
+
+    function dessinerGraphiqueOccupation() {
+        if (!data.value?.occupationParParking?.length || !parkingCanvasRef.value) return
+        parkingChart?.destroy()
+        const items = data.value.occupationParParking
+        parkingChart = new Chart(parkingCanvasRef.value, {
+            type: 'bar',
+            data: {
+                labels: items.map(p => p.nom),
+                datasets: [{
+                    label: "Taux d'occupation (%)",
+                    data: items.map(p => p.tauxOccupation),
+                    backgroundColor: items.map(p => couleurStatut(p.statut))
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, max: 100 } }
+            }
+        })
+    }
+
+    /* ============================================================
+       =========  Repartition des abonnements (Chart.js)  ===========
+       ============================================================ */
+    const repartitionCanvasRef = ref(null)
+    let repartitionChart = null
+
+    function dessinerGraphiqueRepartition() {
+        if (!data.value?.repartitionAbonnements?.length || !repartitionCanvasRef.value) return
+        repartitionChart?.destroy()
+        const items = data.value.repartitionAbonnements
+        repartitionChart = new Chart(repartitionCanvasRef.value, {
+            type: 'doughnut',
+            data: {
+                labels: items.map(r => r.type),
+                datasets: [{
+                    data: items.map(r => r.nombre),
+                    backgroundColor: ['#1B5FAE', '#2E9E5B', '#E0A32E', '#8B5CF6']
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+        })
+    }
+
+    /* ============================================================
+       ===============  Paiements par mois (Chart.js)  ==============
+       ============================================================ */
+    const revenusCanvasRef = ref(null)
+    let revenusChart = null
+
+    function dessinerGraphiqueRevenus() {
+        if (!data.value?.revenusParMois?.length || !revenusCanvasRef.value) return
+        revenusChart?.destroy()
+        const items = data.value.revenusParMois
+        revenusChart = new Chart(revenusCanvasRef.value, {
+            type: 'bar',
+            data: {
+                labels: items.map(r => r.nomMois),
+                datasets: [{
+                    label: 'Paiements reçus (DT)',
+                    data: items.map(r => r.montant),
+                    backgroundColor: '#1B5FAE'
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } } }
+        })
+    }
 
     /* ============================================================
        ===============  Graphique des abonnements  ==================
@@ -228,6 +333,38 @@
         <div v-if="isLoading" class="text-slate-400 text-sm">Chargement du tableau de bord…</div>
 
         <div v-else-if="data" class="space-y-6">
+            <!-- ============ Alertes de saturation ============ -->
+            <div v-if="data.alertesSaturation?.length" class="rounded-2xl border border-red-200 bg-red-50 p-4">
+                <p class="text-sm font-semibold text-red-700 flex items-center gap-2 mb-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                        <line x1="12" y1="9" x2="12" y2="13" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
+                    Alertes de saturation
+                </p>
+                <div class="flex flex-wrap gap-2">
+                    <span v-for="a in data.alertesSaturation" :key="a.parkingId"
+                          class="px-3 py-1 rounded-full text-xs font-semibold"
+                          :class="a.niveau === 'critique' ? 'bg-red-600 text-white' : 'bg-amber-100 text-amber-700'">
+                        {{ a.nomParking }} — {{ a.tauxOccupation }}%
+                    </span>
+                </div>
+            </div>
+
+            <!-- ============ Accès rapides ============ -->
+            <div class="flex flex-wrap gap-3">
+                <router-link to="/abonnements/renouveler" class="px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:opacity-90">
+                    Renouveler un abonnement
+                </router-link>
+                <router-link to="/paiements/nouveau" class="px-4 py-2 rounded-xl border border-slate-200 text-sm font-semibold hover:bg-slate-50">
+                    Enregistrer un paiement
+                </router-link>
+                <router-link to="/entreprises" class="px-4 py-2 rounded-xl border border-slate-200 text-sm font-semibold hover:bg-slate-50">
+                    Voir les entreprises
+                </router-link>
+            </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="bg-panel rounded-2xl p-5 shadow-soft border border-slate-100">
                     <p class="text-xs uppercase tracking-wide text-slate-400 font-semibold">Entreprises</p>
@@ -288,6 +425,31 @@
                 </div>
             </div>
 
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div v-if="data.parkingLePlusOccupe" class="bg-panel rounded-2xl p-5 shadow-soft border border-slate-100">
+                    <p class="text-xs uppercase tracking-wide text-slate-400 font-semibold">Parking le plus occupé</p>
+                    <p class="text-lg font-bold text-slate-800 mt-2">{{ data.parkingLePlusOccupe.nom }}</p>
+                    <p class="text-sm font-semibold text-red-600 mt-1">{{ data.parkingLePlusOccupe.tauxOccupation }}%</p>
+                </div>
+                <div v-if="data.parkingLeMoinsOccupe" class="bg-panel rounded-2xl p-5 shadow-soft border border-slate-100">
+                    <p class="text-xs uppercase tracking-wide text-slate-400 font-semibold">Parking le moins occupé</p>
+                    <p class="text-lg font-bold text-slate-800 mt-2">{{ data.parkingLeMoinsOccupe.nom }}</p>
+                    <p class="text-sm font-semibold text-emerald-600 mt-1">{{ data.parkingLeMoinsOccupe.tauxOccupation }}%</p>
+                </div>
+                <div class="bg-panel rounded-2xl p-5 shadow-soft border border-slate-100">
+                    <p class="text-xs uppercase tracking-wide text-slate-400 font-semibold">Paiements en retard</p>
+                    <p class="text-2xl font-bold mt-2" :class="data.nombrePaiementsEnRetard > 0 ? 'text-red-600' : 'text-slate-800'">
+                        {{ data.nombrePaiementsEnRetard }}
+                    </p>
+                </div>
+                <div class="bg-panel rounded-2xl p-5 shadow-soft border border-slate-100">
+                    <p class="text-xs uppercase tracking-wide text-slate-400 font-semibold">Abonnements expirant (30j)</p>
+                    <p class="text-2xl font-bold mt-2" :class="data.abonnementsExpirantSous30Jours > 0 ? 'text-amber-600' : 'text-slate-800'">
+                        {{ data.abonnementsExpirantSous30Jours }}
+                    </p>
+                </div>
+            </div>
+
             <div>
                 <p class="text-sm font-semibold text-slate-600 mb-3">Revenus</p>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -308,6 +470,72 @@
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- ============ Revenu par entreprise ============ -->
+            <div v-if="data.revenuParEntreprise?.length" class="p-6 bg-panel rounded-xl shadow-soft border border-slate-100">
+                <h3 class="font-semibold text-lg mb-4">Revenus par entreprise</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="text-left text-xs uppercase tracking-wide text-slate-400 border-b border-slate-100">
+                                <th class="pb-2">Entreprise</th>
+                                <th class="pb-2">Revenu total</th>
+                                <th class="pb-2">Revenu du mois</th>
+                                <th class="pb-2">Impayé</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="r in data.revenuParEntreprise" :key="r.entrepriseId" class="border-b border-slate-50">
+                                <td class="py-2 font-medium text-slate-700">{{ r.nomEntreprise }}</td>
+                                <td class="py-2 text-emerald-600 font-semibold">{{ formatMontant(r.revenuTotal) }}</td>
+                                <td class="py-2">{{ formatMontant(r.revenuMensuel) }}</td>
+                                <td class="py-2" :class="r.montantImpaye > 0 ? 'text-red-600 font-semibold' : 'text-slate-400'">
+                                    {{ formatMontant(r.montantImpaye) }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ============ Graphiques Chart.js ============ -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="p-6 bg-panel rounded-xl shadow-soft border border-slate-100">
+                    <h3 class="font-semibold text-lg mb-1">Occupation par parking</h3>
+                    <p class="text-sm text-gray-400 mb-4">Vert &lt;60% · Jaune 60-85% · Rouge &gt;85%</p>
+                    <canvas ref="parkingCanvasRef" height="220"></canvas>
+                </div>
+                <div class="p-6 bg-panel rounded-xl shadow-soft border border-slate-100">
+                    <h3 class="font-semibold text-lg mb-4">Répartition des abonnements</h3>
+                    <canvas ref="repartitionCanvasRef" height="220"></canvas>
+                </div>
+            </div>
+
+            <div class="p-6 bg-panel rounded-xl shadow-soft border border-slate-100">
+                <h3 class="font-semibold text-lg mb-4">Paiements par mois</h3>
+                <canvas ref="revenusCanvasRef" height="180"></canvas>
+            </div>
+
+            <!-- ============ Dernières notifications ============ -->
+            <div v-if="data.dernieresNotifications?.length" class="p-6 bg-panel rounded-xl shadow-soft border border-slate-100">
+                <h3 class="font-semibold text-lg mb-4">Dernières notifications</h3>
+                <ul class="space-y-3">
+                    <li v-for="n in data.dernieresNotifications" :key="n.id" class="flex items-start gap-3">
+                        <span class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
+                              :class="notificationDotClass(n.type)" />
+                        <div class="flex-1">
+                            <p class="text-sm font-semibold text-slate-700">{{ n.sujet }}</p>
+                            <p class="text-sm text-slate-500" v-html="n.message"></p>
+                            <p class="text-xs text-slate-400 mt-0.5">
+                                {{ n.entrepriseNom }} · {{ formatHeure(new Date(n.dateCreation)) }}
+                            </p>
+                        </div>
+                        <span v-if="n.statut === 'Echouee'" class="text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-600 font-semibold">
+                            Échec
+                        </span>
+                    </li>
+                </ul>
             </div>
 
             <!-- ============ Graphique : Évolution des abonnements ============ -->

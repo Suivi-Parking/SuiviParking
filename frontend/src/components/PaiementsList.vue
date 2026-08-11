@@ -6,26 +6,6 @@
             <p class="pl-subtitle">Suivi financier des abonnements souscrits</p>
         </div>
 
-        <!-- Cartes -->
-        <div class="pl-stats">
-            <div class="pl-stat">
-                <div class="pl-stat-label">Montant perçu</div>
-                <div class="pl-stat-value green">{{ formatMontant(indicateurs.montantTotalPercu) }}</div>
-            </div>
-            <div class="pl-stat">
-                <div class="pl-stat-label">Montant impayé</div>
-                <div class="pl-stat-value red">{{ formatMontant(indicateurs.montantImpaye) }}</div>
-            </div>
-            <div class="pl-stat">
-                <div class="pl-stat-label">Taux de recouvrement</div>
-                <div class="pl-stat-value blue">{{ indicateurs.tauxRecouvrement }}%</div>
-                <div class="pl-progress"><div class="pl-progress-fill" :style="{ width: progressWidth }"></div></div>
-            </div>
-            <div class="pl-stat">
-                <div class="pl-stat-label">Échéances en retard</div>
-                <div class="pl-stat-value amber">{{ counts.enRetard }}</div>
-            </div>
-        </div>
 
         <!-- Filtres -->
         <div class="pl-filters">
@@ -108,7 +88,29 @@
                     <button class="pl-modal-close" @click="isCreateModalOpen = false">✕</button>
                 </div>
                 <form @submit.prevent="handleCreate" class="pl-modal-body">
-                    <div class="pl-field"><label>ID Abonnement</label><input v-model="createForm.abonnementId" type="number" required /></div>
+                    <div class="pl-field" style="position:relative">
+                        <label>Abonnement *</label>
+                        <input v-model="abonnementSearch"
+                               type="text"
+                               autocomplete="off"
+                               placeholder="Rechercher par entreprise, type, parking..."
+                               @focus="isAbonnementListOpen = true"
+                               @input="isAbonnementListOpen = true"
+                               @blur="handleAbonnementBlur"
+                               required />
+                        <ul v-if="isAbonnementListOpen && abonnementsFiltres.length"
+                            style="position:absolute;z-index:70;background:#fff;border:1px solid #cbd5e1;border-radius:6px;margin-top:2px;max-height:180px;overflow-y:auto;width:100%;list-style:none;padding:4px 0;box-shadow:0 6px 16px rgba(0,0,0,0.08)">
+                            <li v-for="a in abonnementsFiltres" :key="a.id"
+                                @mousedown.prevent="selectAbonnement(a)"
+                                :style="{ padding: '8px 10px', cursor: 'pointer', fontSize: '0.85rem', background: createForm.abonnementId === a.id ? '#eff6ff' : '#fff' }">
+                                {{ labelAbonnement(a) }}
+                            </li>
+                        </ul>
+                        <div v-else-if="isAbonnementListOpen && abonnementSearch && !abonnementsFiltres.length"
+                             style="position:absolute;z-index:70;background:#fff;border:1px solid #cbd5e1;border-radius:6px;margin-top:2px;padding:8px 10px;width:100%;color:#94a3b8;font-size:0.85rem">
+                            Aucun abonnement actif trouvé.
+                        </div>
+                    </div>
                     <div class="pl-field"><label>Montant (DT)</label><input v-model="createForm.montant" type="number" step="0.01" required /></div>
                     <div class="pl-field"><label>Date échéance</label><input v-model="createForm.dateEcheance" type="date" required /></div>
                     <div class="pl-field"><label>Période couverte</label><input v-model="createForm.periodeCouverte" placeholder="Ex: Août 2026" required /></div>
@@ -135,11 +137,11 @@
                         <div class="pl-field">
                             <label>Mode</label>
                             <select v-model="payForm.modePaiement">
-                                <option>Virement</option>
-                                <option>Chèque</option>
-                                <option>Carte</option>
-                                <option>Prélèvement</option>
-                                <option>Espèces</option>
+                                <option value="Virement">Virement</option>
+                                <option value="Cheque">Chèque</option>
+                                <option value="Carte">Carte</option>
+                                <option value="Prelevement">Prélèvement</option>
+                                <option value="Especes">Espèces</option>
                             </select>
                         </div>
                         <div class="pl-field"><label>Référence</label><input v-model="payForm.referenceTransaction" /></div>
@@ -160,7 +162,7 @@
 
 <script setup>
     import { ref, computed, onMounted, onUnmounted } from 'vue'
-    // import api from '../services/api' // Décommentez si vous utilisez l'API
+    import api from '../services/api'
 
     // ===== Données =====
     const paiements = ref([])
@@ -183,12 +185,50 @@
     const createForm = ref({ abonnementId: '', montant: '', dateEcheance: '', periodeCouverte: '' })
     const payForm = ref({ datePaiement: '', modePaiement: 'Virement', referenceTransaction: '' })
 
-    // === Données fictives (démonstration) ===
-    const MOCK_DATA = [
-        { id: 1, entrepriseNom: 'jasser missaoui', typeAbonnement: 'Mensuel', montant: 0.69, dateEcheance: '2026-07-22', joursRetard: 0, periodeCouverte: 'Juillet 2026', statut: 'Rejete' },
-        { id: 2, entrepriseNom: 'jasser missaoui', typeAbonnement: 'Mensuel', montant: 0.13, dateEcheance: '2026-07-22', joursRetard: 1, periodeCouverte: 'Juillet 2026', statut: 'EnRetard' },
-        { id: 3, entrepriseNom: 'jasser missaoui', typeAbonnement: 'Trimestriel', montant: 200, dateEcheance: '2026-07-23', joursRetard: 0, periodeCouverte: 'Août 2026', statut: 'Rejete' },
-    ]
+    // === Sélecteur d'abonnement (recherche par entreprise / type / parking, plus d'ID brut) ===
+    const abonnements = ref([])
+    const abonnementSearch = ref('')
+    const isAbonnementListOpen = ref(false)
+
+    const abonnementsFiltres = computed(() => {
+        const q = abonnementSearch.value.trim().toLowerCase()
+        if (!q) return abonnements.value
+        return abonnements.value.filter(a =>
+            (a.entrepriseNom || '').toLowerCase().includes(q) ||
+            (a.typeAbonnement || '').toLowerCase().includes(q) ||
+            (a.parkingNom || '').toLowerCase().includes(q)
+        )
+    })
+
+    function labelAbonnement(a) {
+        const periode = `${formatDate(a.dateDebut)} → ${formatDate(a.dateFin)}`
+        const parking = a.parkingNom ? ` · ${a.parkingNom}` : ''
+        return `${a.entrepriseNom} — ${a.typeAbonnement}${parking} (${periode})`
+    }
+
+    function selectAbonnement(a) {
+        createForm.value.abonnementId = a.id
+        abonnementSearch.value = labelAbonnement(a)
+        isAbonnementListOpen.value = false
+    }
+
+    // Delai avant fermeture pour laisser le @mousedown.prevent d'un <li> s'executer
+    // avant que le blur du champ ne referme la liste.
+    function handleAbonnementBlur() {
+        setTimeout(() => { isAbonnementListOpen.value = false }, 150)
+    }
+
+    async function fetchAbonnementsActifs() {
+        try {
+            const response = await api.get('/Abonnements', { params: { pageSize: 1000 } })
+            const tous = response.data.items || response.data || []
+            // Seuls les abonnements actifs ont vocation a recevoir une nouvelle echeance
+            abonnements.value = tous.filter(a => a.statut === 'Actif')
+        } catch (e) {
+            console.error(e)
+            abonnements.value = []
+        }
+    }
 
     const tabs = [
         { key: null, label: 'Tous', countKey: 'tous' },
@@ -218,34 +258,24 @@
         }
     }
     function formatMontant(m) {
-        return new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 2 }).format(m) + ' DT'
+        return new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 2 }).format(m ?? 0) + ' DT'
     }
     function formatDate(d) {
         if (!d) return '—'
         return new Date(d).toLocaleDateString('fr-FR')
     }
 
-    // === Chargement (API ou mock) ===
+    // === Chargement ===
     async function fetchPaiements() {
         isLoading.value = true
         errorMsg.value = ''
         try {
-            // En production, utilisez l'appel API :
-            // const response = await api.get('/Paiements', { params: { statut: filtreStatut.value, page: page.value, pageSize } })
-            // paiements.value = response.data.items; totalCount.value = response.data.totalCount; ...
-            // Pour la démo, on utilise les données fictives
-            let filtered = MOCK_DATA
-            if (filtreStatut.value) filtered = filtered.filter(p => p.statut === filtreStatut.value)
-            paiements.value = filtered
-            totalCount.value = filtered.length
-            counts.value = {
-                tous: MOCK_DATA.length,
-                paye: MOCK_DATA.filter(p => p.statut === 'Paye').length,
-                enAttente: MOCK_DATA.filter(p => p.statut === 'EnAttente').length,
-                enRetard: MOCK_DATA.filter(p => p.statut === 'EnRetard').length,
-                rejete: MOCK_DATA.filter(p => p.statut === 'Rejete').length,
-            }
-            if (filtered.length === 0 && MOCK_DATA.length > 0) errorMsg.value = 'Aucun résultat pour ce filtre.'
+            const response = await api.get('/Paiements', {
+                params: { statut: filtreStatut.value, page: page.value, pageSize }
+            })
+            paiements.value = response.data.items
+            totalCount.value = response.data.totalCount
+            counts.value = response.data.counts
         } catch {
             errorMsg.value = 'Erreur de chargement des paiements.'
         } finally {
@@ -254,15 +284,13 @@
     }
 
     async function fetchIndicateurs() {
-        // En production, utilisez l'appel API :
-        // const response = await api.get('/Paiements/indicateurs')
-        // indicateurs.value = response.data
-        // Pour la démo, on calcule à partir des données fictives (au lieu d'un taux figé)
-        const percu = MOCK_DATA.filter(p => p.statut === 'Paye').reduce((sum, p) => sum + p.montant, 0)
-        const impaye = MOCK_DATA.filter(p => p.statut === 'EnAttente' || p.statut === 'EnRetard').reduce((sum, p) => sum + p.montant, 0)
-        const total = percu + impaye
-        const taux = total > 0 ? Math.round((percu / total) * 100) : 0
-        indicateurs.value = { montantTotalPercu: percu, montantImpaye: impaye, tauxRecouvrement: taux }
+        try {
+            const response = await api.get('/Paiements/indicateurs')
+            indicateurs.value = response.data
+        } catch {
+            // Les indicateurs ne sont pas critiques : on n'affiche pas d'erreur bloquante,
+            // les cartes retomberont simplement sur leurs valeurs par defaut (0).
+        }
     }
 
     // Largeur de la barre, toujours bornée entre 0 et 100 même si la donnée source est incohérente
@@ -276,21 +304,39 @@
     }
     const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / pageSize)))
 
+    function showToast(message) {
+        toastError.value = message
+        setTimeout(() => { toastError.value = '' }, 3500)
+    }
+
     // === Création ===
     function openCreateModal() {
         createForm.value = { abonnementId: '', montant: '', dateEcheance: '', periodeCouverte: '' }
+        abonnementSearch.value = ''
         formError.value = ''
         isCreateModalOpen.value = true
+        fetchAbonnementsActifs()
     }
     async function handleCreate() {
         formError.value = ''
+        if (!createForm.value.abonnementId) {
+            formError.value = 'Sélectionnez un abonnement dans la liste.'
+            return
+        }
         try {
-            // await api.post('/Paiements', { ... })
-            // Simulation
-            await new Promise(resolve => setTimeout(resolve, 500))
+            await api.post('/Paiements', {
+                abonnementId: Number(createForm.value.abonnementId),
+                montant: Number(createForm.value.montant),
+                dateEcheance: createForm.value.dateEcheance,
+                periodeCouverte: createForm.value.periodeCouverte
+            })
             isCreateModalOpen.value = false
-            await fetchPaiements()
-        } catch { formError.value = 'Erreur lors de la création.' }
+            await Promise.all([fetchPaiements(), fetchIndicateurs()])
+        } catch (err) {
+            formError.value = err?.response?.data?.title
+                ?? err?.response?.data
+                ?? 'Erreur lors de la création.'
+        }
     }
 
     // === Marquer payé ===
@@ -298,21 +344,29 @@
     async function handleMarquerPaye() {
         formError.value = ''
         try {
-            // await api.post(`/Paiements/${selectedPaiement.value.id}/marquer-paye`, { ... })
-            await new Promise(resolve => setTimeout(resolve, 500))
+            await api.post(`/Paiements/${selectedPaiement.value.id}/marquer-paye`, {
+                datePaiement: payForm.value.datePaiement,
+                modePaiement: payForm.value.modePaiement,
+                referenceTransaction: payForm.value.referenceTransaction || null
+            })
             isPayModalOpen.value = false
-            await fetchPaiements()
-        } catch { formError.value = 'Erreur lors du paiement.' }
+            await Promise.all([fetchPaiements(), fetchIndicateurs()])
+        } catch (err) {
+            formError.value = err?.response?.data?.title
+                ?? err?.response?.data
+                ?? 'Erreur lors du paiement.'
+        }
     }
 
     // === Rejeter ===
     async function handleRejeter(p) {
         if (!confirm(`Rejeter le paiement de ${formatMontant(p.montant)} ?`)) return
         try {
-            // await api.post(`/Paiements/${p.id}/rejeter`, {})
-            await new Promise(resolve => setTimeout(resolve, 300))
-            await fetchPaiements()
-        } catch { toastError.value = 'Erreur lors du rejet.' }
+            await api.post(`/Paiements/${p.id}/rejeter`, {})
+            await Promise.all([fetchPaiements(), fetchIndicateurs()])
+        } catch {
+            showToast('Erreur lors du rejet.')
+        }
     }
 
     // === Événement global pour le Header ===
