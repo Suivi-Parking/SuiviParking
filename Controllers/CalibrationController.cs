@@ -5,6 +5,7 @@ using Parkini.Application.DTOs;
 using Parkini.Entities;
 using Parkini.Infrastructure.Calibration;
 using Parkini.Infrastructure.Data;
+using Parkini.Infrastructure.Security;
 
 namespace Parkini.Controllers;
 
@@ -24,6 +25,7 @@ public class CalibrationController : ControllerBase
 
     // GET api/Calibration/image/5
     // Sert l'image du parking pour que l'UI admin l'affiche en fond du canvas.
+    [HasPermission(Permissions.ParkingsRead)]
     [HttpGet("image/{parkingId:int}")]
     public async Task<IActionResult> GetImage(int parkingId)
     {
@@ -40,6 +42,7 @@ public class CalibrationController : ControllerBase
 
     // GET api/Calibration/5
     // Renvoie les zones deja calibrees pour ce parking (liste vide si aucune).
+    [HasPermission(Permissions.ParkingsRead)]
     [HttpGet("{parkingId:int}")]
     public async Task<ActionResult<List<CalibrationZoneDto>>> GetZones(int parkingId)
     {
@@ -54,6 +57,7 @@ public class CalibrationController : ControllerBase
 
     // PUT api/Calibration/5
     // Remplace l'integralite de la calibration d'un parking en une fois.
+    [HasPermission(Permissions.ParkingsWrite)]
     [HttpPut("{parkingId:int}")]
     public async Task<ActionResult<List<CalibrationZoneDto>>> SauvegarderZones(
         int parkingId, List<CalibrationZoneInputDto> zones)

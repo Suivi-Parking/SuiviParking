@@ -32,9 +32,11 @@ public class GeminiVlmOccupationService : IVlmOccupationService
 
     public async Task<ResultatAnalyseVlm> AnalyserAsync(AnalyseOccupationRequest requete, CancellationToken ct = default)
     {
-        var apiKey = _config["Vlm:ApiKey"]
-            ?? throw new InvalidOperationException("Cle API VLM manquante (config 'Vlm:ApiKey').");
-        var modele = _config["Vlm:Model"] ?? "gemini-2.5-flash";
+        var modele = _config["Vlm:Model"] ?? "gemini-flash-latest";
+        // Modele de secours : essaye avec un modele different (souvent moins
+        // congestionne, quota separe) si le principal reste indisponible
+        // apres toutes les tentatives. Laisse vide dans la config pour desactiver.
+        var modeleSecours = _config["Vlm:ModelFallback"] ?? "gemini-2.5-flash-lite";
 
         // Gemini exige les octets de l'image (base64), pas une URL directement.
         var (imageBytes, mimeType) = await TelechargerImageAsync(requete.ImageUrl, ct);
@@ -59,19 +61,74 @@ public class GeminiVlmOccupationService : IVlmOccupationService
         };
 
         var json = JsonSerializer.Serialize(corpsRequete);
-        using var contenu = new StringContent(json, Encoding.UTF8, "application/json");
 
-        using var reponseHttp = await _httpClient.PostAsync(
-            $"models/{modele}:generateContent?key={apiKey}", contenu, ct);
-        var corpsReponse = await reponseHttp.Content.ReadAsStringAsync(ct);
+        // Retry avec backoff, puis bascule sur un modele de secours si le
+        // modele principal reste indisponible : un 503 "high demand" chez
+        // Gemini peut durer plus que quelques secondes sur le tier gratuit,
+        // et les modeles ont des pools de capacite/quota distincts, donc
+        // changer de modele contourne souvent une surcharge persistante.
+        var corpsReponse = await AppelerAvecRetryAsync(modele, json, ct)
+            ?? (!string.IsNullOrWhiteSpace(modeleSecours) && modeleSecours != modele
+                ? await AppelerAvecRetryAsync(modeleSecours, json, ct)
+                : null);
 
-        if (!reponseHttp.IsSuccessStatusCode)
-        {
-            _logger.LogError("Echec de l'appel Gemini ({Status}) : {Corps}", reponseHttp.StatusCode, corpsReponse);
-            throw new InvalidOperationException($"Echec de l'appel au VLM (Gemini) : {reponseHttp.StatusCode}. Voir les logs pour le detail.");
-        }
+        if (corpsReponse is null)
+            throw new InvalidOperationException("Echec de l'appel au VLM (Gemini) : service indisponible apres toutes les tentatives (modele principal et modele de secours). Voir les logs pour le detail.");
 
         return ParserReponse(corpsReponse);
+    }
+
+    /// <summary>
+    /// Tente l'appel a un modele donne, avec retry (backoff exponentiel) sur
+    /// les erreurs transitoires (503/429). Retourne null si toutes les
+    /// tentatives echouent avec une erreur transitoire (pour laisser
+    /// AnalyserAsync basculer sur le modele de secours), ou leve directement
+    /// si l'erreur n'est pas transitoire (ex: cle invalide, modele inconnu).
+    /// </summary>
+    private async Task<string?> AppelerAvecRetryAsync(string modele, string json, CancellationToken ct)
+    {
+        var apiKey = _config["Vlm:ApiKey"]
+            ?? throw new InvalidOperationException("Cle API VLM manquante (config 'Vlm:ApiKey').");
+
+        const int tentativesMax = 4;
+
+        for (var tentative = 1; tentative <= tentativesMax; tentative++)
+        {
+            using var contenu = new StringContent(json, Encoding.UTF8, "application/json");
+            using var reponseHttp = await _httpClient.PostAsync(
+                $"models/{modele}:generateContent?key={apiKey}", contenu, ct);
+            var corpsReponse = await reponseHttp.Content.ReadAsStringAsync(ct);
+
+            if (reponseHttp.IsSuccessStatusCode)
+                return corpsReponse;
+
+            var estTransitoire = reponseHttp.StatusCode is System.Net.HttpStatusCode.ServiceUnavailable
+                or System.Net.HttpStatusCode.TooManyRequests;
+
+            if (!estTransitoire)
+            {
+                _logger.LogError("Echec de l'appel Gemini ({Modele}, {Status}) : {Corps}", modele, reponseHttp.StatusCode, corpsReponse);
+                throw new InvalidOperationException($"Echec de l'appel au VLM (Gemini, modele {modele}) : {reponseHttp.StatusCode}. Voir les logs pour le detail.");
+            }
+
+            if (tentative == tentativesMax)
+            {
+                _logger.LogWarning("Modele {Modele} indisponible apres {Tentative} tentatives ({Status}).", modele, tentative, reponseHttp.StatusCode);
+                return null;
+            }
+
+            // Backoff exponentiel plafonne : 1s, 2s, 4s, 8s (+ leger jitter pour eviter
+            // que plusieurs requetes en parallele ne retentent toutes exactement au meme instant)
+            var delaiBase = Math.Min(Math.Pow(2, tentative - 1), 8);
+            var jitterMs = Random.Shared.Next(0, 500);
+            var delai = TimeSpan.FromSeconds(delaiBase) + TimeSpan.FromMilliseconds(jitterMs);
+
+            _logger.LogWarning("Gemini indisponible ({Modele}, {Status}), nouvelle tentative dans {Delai:0.0}s ({Tentative}/{Max})",
+                modele, reponseHttp.StatusCode, delai.TotalSeconds, tentative, tentativesMax);
+            await Task.Delay(delai, ct);
+        }
+
+        return null;
     }
 
     private async Task<(byte[] Bytes, string MimeType)> TelechargerImageAsync(string imageUrl, CancellationToken ct)
