@@ -28,6 +28,12 @@ public class Parking
     public StatutParking Statut { get; set; } = StatutParking.Actif;
     public DateTime DateDerniereModification { get; set; } = DateTime.UtcNow;
 
+    // SCRUM-22 : horodatage dedie a la derniere analyse VLM reussie, distinct
+    // de DateDerniereModification (qui bouge aussi sur une simple edition du
+    // parking ou de ses zones, et ne reflete donc pas fiablement "l'IA a
+    // tourne recemment"). Null tant qu'aucune analyse n'a encore eu lieu.
+    public DateTime? DateDerniereAnalyseIa { get; set; }
+
     // Soft-delete = archivage. Distinct de Statut (Actif/Inactif), qui est un etat
     // metier, alors qu'EstSupprime signifie "n'existe plus du tout" pour l'appli.
     public bool EstSupprime { get; set; } = false;
