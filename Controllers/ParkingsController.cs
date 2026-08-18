@@ -328,6 +328,7 @@ public class ParkingsController : ControllerBase
             CapaciteMax = capaciteMax,
             PlacesOccupees = placesOccupees,
             DateDerniereModification = p.DateDerniereModification,
+            DateDerniereAnalyseIa = p.DateDerniereAnalyseIa,
             Zones = inclureZones ? p.Zones.Select(ToZoneDto).ToList() : new List<ZoneDto>()
         };
     }

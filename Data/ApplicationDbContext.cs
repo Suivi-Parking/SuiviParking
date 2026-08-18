@@ -22,6 +22,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Vehicule> Vehicules => Set<Vehicule>();
     public DbSet<Acces> Acces => Set<Acces>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<ZoneCalibration> ZonesCalibration => Set<ZoneCalibration>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -114,5 +115,29 @@ public class ApplicationDbContext : DbContext
             .WithMany()
             .HasForeignKey(n => n.VehiculeId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // ===== ZoneCalibration (SCRUM-21) =====
+        // Stocke les points du polygone en jsonb plutot qu'en text simple.
+        modelBuilder.Entity<ZoneCalibration>()
+            .Property(z => z.PointsJson)
+            .HasColumnType("jsonb");
+
+        // Une seule calibration par Zone physique. A retirer si une meme zone
+        // doit un jour pouvoir correspondre a plusieurs polygones sur l'image.
+        modelBuilder.Entity<ZoneCalibration>()
+            .HasIndex(z => z.ZoneId)
+            .IsUnique();
+
+        modelBuilder.Entity<ZoneCalibration>()
+            .HasOne(z => z.Parking)
+            .WithMany()
+            .HasForeignKey(z => z.ParkingId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ZoneCalibration>()
+            .HasOne(z => z.Zone)
+            .WithMany()
+            .HasForeignKey(z => z.ZoneId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

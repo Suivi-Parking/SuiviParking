@@ -39,6 +39,10 @@ namespace parkini.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_fin");
 
+                    b.Property<DateTime?>("DateResiliation")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date_resiliation");
+
                     b.Property<int>("EntrepriseId")
                         .HasColumnType("integer")
                         .HasColumnName("entreprise_id");
@@ -692,6 +696,49 @@ namespace parkini.Migrations
                     b.ToTable("zones", (string)null);
                 });
 
+            modelBuilder.Entity("Parkini.Entities.ZoneCalibration", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("DateCreation")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date_creation");
+
+                    b.Property<DateTime>("DateDerniereModification")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date_derniere_modification");
+
+                    b.Property<int>("ParkingId")
+                        .HasColumnType("integer")
+                        .HasColumnName("parking_id");
+
+                    b.Property<string>("PointsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("points_json");
+
+                    b.Property<int>("ZoneId")
+                        .HasColumnType("integer")
+                        .HasColumnName("zone_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_zones_calibration");
+
+                    b.HasIndex("ParkingId")
+                        .HasDatabaseName("ix_zones_calibration_parking_id");
+
+                    b.HasIndex("ZoneId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_zones_calibration_zone_id");
+
+                    b.ToTable("zones_calibration", (string)null);
+                });
+
             modelBuilder.Entity("Parkini.Entities.Abonnement", b =>
                 {
                     b.HasOne("Parkini.Entities.Entreprise", "Entreprise")
@@ -865,6 +912,27 @@ namespace parkini.Migrations
                         .HasConstraintName("fk_zones_parkings_parking_id");
 
                     b.Navigation("Parking");
+                });
+
+            modelBuilder.Entity("Parkini.Entities.ZoneCalibration", b =>
+                {
+                    b.HasOne("Parkini.Entities.Parking", "Parking")
+                        .WithMany()
+                        .HasForeignKey("ParkingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_zones_calibration_parkings_parking_id");
+
+                    b.HasOne("Parkini.Entities.Zone", "Zone")
+                        .WithMany()
+                        .HasForeignKey("ZoneId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_zones_calibration_zones_zone_id");
+
+                    b.Navigation("Parking");
+
+                    b.Navigation("Zone");
                 });
 
             modelBuilder.Entity("Parkini.Entities.Employe", b =>

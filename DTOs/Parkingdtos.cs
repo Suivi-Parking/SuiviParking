@@ -47,6 +47,9 @@ public class ParkingDto
     public string Statut { get; set; } = string.Empty; // "Actif" | "Inactif"
     public DateTime DateDerniereModification { get; set; }
 
+    // SCRUM-22 : null tant qu'aucune analyse IA n'a encore eu lieu sur ce parking
+    public DateTime? DateDerniereAnalyseIa { get; set; }
+
     public int NombreZones { get; set; }
 
     // Calculee : jamais saisie directement (critere d'acceptation)

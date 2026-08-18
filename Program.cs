@@ -7,6 +7,8 @@ using Parkini.Infrastructure.Security;
 using Hangfire;
 using Hangfire.PostgreSql;
 using Parkini.Infrastructure.Notifications;
+using Parkini.Infrastructure.Vlm;
+using Parkini.Infrastructure.Calibration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,6 +45,14 @@ builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<IEmailSender, MailKitEmailSender>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<RappelsJobs>();
+
+// ===== VLM (SCRUM-22 : analyse d'occupation par vision) =====
+builder.Services.AddHttpClient<IVlmOccupationService, GeminiVlmOccupationService>();
+builder.Services.AddScoped<IOccupationAnalyseService, OccupationAnalyseService>();
+builder.Services.AddScoped<OccupationJobs>();
+
+// ===== Calibration (SCRUM-21 : recuperation image + zones de calibration) =====
+builder.Services.AddHttpClient<IImageParkingService, ImageParkingService>();
 
 if (!string.IsNullOrEmpty(connectionString))
 {
@@ -98,6 +108,15 @@ if (!string.IsNullOrEmpty(connectionString))
         "verifier-mise-a-jour-infos",
         job => job.VerifierMiseAJourInfos(),
         "0 6 * * *");
+
+    // ===== SCRUM-22 : analyse VLM automatique de tous les parkings =====
+    // Toutes les 30 minutes. A ajuster selon le quota VLM disponible (le tier
+    // gratuit Gemini a des limites de requetes/minute assez basses) et le
+    // besoin metier reel de fraicheur des donnees d'occupation.
+    RecurringJob.AddOrUpdate<OccupationJobs>(
+        "analyser-occupation-parkings",
+        job => job.AnalyserTousLesParkings(),
+        "*/30 * * * *");
 
 }
 

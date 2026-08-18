@@ -40,6 +40,7 @@
                         <th>Statut</th>
                         <th>Zones</th>
                         <th>Occupation</th>
+                        <th>Analyse IA</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -49,7 +50,9 @@
                                 :parking="p"
                                 @voir="openDetail(p)"
                                 @modifier="openEdit(p)"
-                                @supprimer="onDelete(p)" />
+                                @supprimer="onDelete(p)"
+                                @calibrer="openCalibration(p)"
+                                @analyse-terminee="loadData" />
                     <tr v-if="data.length === 0">
                         <td colspan="6" class="empty-cell">📭 Aucun parking trouvé.</td>
                     </tr>
@@ -75,6 +78,12 @@
                             :parking-id="detailParkingId"
                             @close="detailParkingId = null"
                             @changed="onDetailChanged" />
+
+        <div v-if="calibrationParkingId" class="calib-overlay" @click.self="calibrationParkingId = null">
+            <div class="calib-modal">
+                <ZoneCalibrationEditor :parking-id="calibrationParkingId" @close="calibrationParkingId = null" />
+            </div>
+        </div>
     </div>
 </template>
 
@@ -83,6 +92,7 @@
     import ParkingRow from './ParkingRow.vue'
     import ParkingForm from './ParkingForm.vue'
     import ParkingDetailModal from './ParkingDetailModal.vue'
+    import ZoneCalibrationEditor from './ZoneCalibrationEditor.vue'
 
     // ===== Données =====
     const data = ref([])
@@ -98,6 +108,7 @@
     const editingParking = ref(null)
     const createError = ref('')
     const detailParkingId = ref(null)
+    const calibrationParkingId = ref(null)
 
     // ===== Filtres =====
     const filters = [
@@ -267,6 +278,11 @@
 
     async function onDetailChanged() {
         await loadData()
+    }
+
+    // ===== Calibration =====
+    function openCalibration(parking) {
+        calibrationParkingId.value = parking.id
     }
 
     // ===== Pagination =====
@@ -482,5 +498,26 @@
         box-shadow: 0 8px 24px rgba(220,38,38,0.3);
         font-size: 0.9rem;
         z-index: 70;
+    }
+
+    .calib-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 80;
+        padding: 1.5rem;
+    }
+
+    .calib-modal {
+        background: #fff;
+        border-radius: 16px;
+        max-width: 960px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.25);
     }
 </style>
